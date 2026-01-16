@@ -8,6 +8,8 @@ import { ref, computed } from 'vue';
 import { alertService } from 'src/services';
 import { useProfileStore } from './profile';
 import { useEntityStore } from './entity';
+import { useEcho } from 'src/composables/useEcho';
+import { useBrowserNotifications } from 'src/composables/useBrowserNotifications';
 import type { Alert } from 'src/types';
 
 export const useAlertsStore = defineStore('alerts', () => {
@@ -20,6 +22,8 @@ export const useAlertsStore = defineStore('alerts', () => {
   const isLoading = ref(false);
   const isLoaded = ref(false);
   const dismissing = ref(new Set<string>());
+  const isSubscribed = ref(false);
+  const channelName = ref<string | null>(null);
 
   // Computed
   const hasMore = computed(() => currentPage.value < totalPages.value);
@@ -232,9 +236,97 @@ export const useAlertsStore = defineStore('alerts', () => {
   }
 
   /**
+   * Subscribe to WebSocket alerts channel
+   */
+  function subscribeToAlerts(): void {
+    const profileStore = useProfileStore();
+    const { subscribe, isConnected } = useEcho();
+    const browserNotifications = useBrowserNotifications();
+
+    if (!profileStore.contact?.id) {
+      console.warn('[AlertsStore] Cannot subscribe: No contact ID');
+      return;
+    }
+
+    if (!isConnected.value) {
+      console.warn('[AlertsStore] Cannot subscribe: Echo not connected');
+      return;
+    }
+
+    if (isSubscribed.value) {
+      console.log('[AlertsStore] Already subscribed to alerts channel');
+      return;
+    }
+
+    channelName.value = `contact.${profileStore.contact.id}.alerts`;
+
+    // Listen to alert.created - New alert for this contact
+    subscribe(channelName.value, '.alert.created', (data: any) => {
+      console.log('[AlertsStore] Real-time alert created:', data);
+
+      // Refetch to get full alert data (broadcast only sends minimal data)
+      void fetchAlerts({ dismissed: false }).then(() => {
+        // After fetching, show browser notification for the new alert
+        if (browserNotifications.isAvailable.value && alerts.value.length > 0) {
+          // Find the most recently created alert (newest first)
+          const newestAlert = alerts.value[0];
+          if (newestAlert && !newestAlert.dismissed_at) {
+            browserNotifications.showNotification(newestAlert);
+          }
+        }
+      });
+    });
+
+    // Listen to alert.sent - Alert successfully sent
+    subscribe(channelName.value, '.alert.sent', (data: any) => {
+      console.log('[AlertsStore] Real-time alert sent:', data);
+
+      // Update status if alert is in list
+      const alert = alerts.value.find((a) => a.id === data.alert_id);
+      if (alert) {
+        updateAlert(data.alert_id, {
+          status: data.status,
+          sent_at: data.sent_at,
+        });
+      }
+    });
+
+    // Listen to alert.dismissed - Alert dismissed (possibly by another device/session)
+    subscribe(channelName.value, '.alert.dismissed', (data: any) => {
+      console.log('[AlertsStore] Real-time alert dismissed:', data);
+
+      // Update dismissed status
+      updateAlert(data.alert_id, {
+        dismissed_at: data.dismissed_at,
+        dismissed_by: data.dismissed_by,
+      });
+    });
+
+    isSubscribed.value = true;
+    console.log(`[AlertsStore] Subscribed to ${channelName.value}`);
+  }
+
+  /**
+   * Unsubscribe from WebSocket alerts channel
+   */
+  function unsubscribeFromAlerts(): void {
+    if (!channelName.value) {
+      return;
+    }
+
+    const { unsubscribe } = useEcho();
+    unsubscribe(channelName.value);
+
+    isSubscribed.value = false;
+    channelName.value = null;
+    console.log('[AlertsStore] Unsubscribed from alerts channel');
+  }
+
+  /**
    * Reset store state
    */
   function $reset(): void {
+    unsubscribeFromAlerts();
     alerts.value = [];
     currentPage.value = 1;
     totalPages.value = 1;
@@ -254,6 +346,7 @@ export const useAlertsStore = defineStore('alerts', () => {
     isLoading,
     isLoaded,
     dismissing,
+    isSubscribed,
 
     // Computed
     hasMore,
@@ -269,6 +362,8 @@ export const useAlertsStore = defineStore('alerts', () => {
     prependAlert,
     updateAlert,
     removeAlert,
+    subscribeToAlerts,
+    unsubscribeFromAlerts,
     $reset,
   };
 });

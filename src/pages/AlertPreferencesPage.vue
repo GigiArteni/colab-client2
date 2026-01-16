@@ -29,6 +29,49 @@
 
     <!-- Content -->
     <div v-else class="preferences-content">
+      <!-- Browser Notifications Section -->
+      <q-card flat bordered class="browser-notifications-card q-mb-md">
+        <q-card-section>
+          <div class="row items-center">
+            <q-icon name="las la-desktop" size="32px" color="primary" class="q-mr-md" />
+            <div class="col">
+              <div class="text-subtitle1 text-weight-medium">Notificări Browser</div>
+              <div class="text-caption text-grey-7">
+                Primește notificări pe desktop chiar dacă aplicația nu este deschisă
+              </div>
+            </div>
+            <q-toggle
+              :model-value="browserNotifications.isEnabled.value"
+              :disable="!browserNotifications.isSupported.value || browserNotifications.permission.value === 'denied'"
+              color="primary"
+              @update:model-value="handleBrowserNotificationToggle"
+            />
+          </div>
+        </q-card-section>
+
+        <q-separator v-if="browserNotifications.permission.value === 'default' || browserNotifications.permission.value === 'denied'" />
+
+        <q-card-section v-if="browserNotifications.permission.value === 'default'">
+          <q-btn
+            unelevated
+            color="primary"
+            icon="las la-bell"
+            label="Activează Notificările"
+            @click="handleRequestPermission"
+            class="full-width"
+          />
+        </q-card-section>
+
+        <q-card-section v-else-if="browserNotifications.permission.value === 'denied'">
+          <q-banner dense class="bg-warning text-white" rounded>
+            <template #avatar>
+              <q-icon name="las la-exclamation-triangle" />
+            </template>
+            Notificările au fost blocate. Activează-le din setările browser-ului.
+          </q-banner>
+        </q-card-section>
+      </q-card>
+
       <!-- Category Tabs -->
       <q-tabs
         v-model="selectedCategory"
@@ -246,6 +289,7 @@ import { useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
 import { useEntityStore } from 'src/stores/entity';
 import { useProfileStore } from 'src/stores/profile';
+import { useBrowserNotifications } from 'src/composables/useBrowserNotifications';
 import * as alertPreferenceService from 'src/services/alertPreference.service';
 import type {
   AlertType,
@@ -259,6 +303,7 @@ const router = useRouter();
 const $q = useQuasar();
 const entityStore = useEntityStore();
 const profileStore = useProfileStore();
+const browserNotifications = useBrowserNotifications();
 
 // State
 const loading = ref(false);
@@ -463,6 +508,65 @@ const savePreferences = async () => {
   }
 };
 
+/**
+ * Handle browser notification toggle
+ */
+function handleBrowserNotificationToggle(value: boolean) {
+  if (value) {
+    // If trying to enable, ensure permission is granted
+    if (browserNotifications.permission.value === 'granted') {
+      browserNotifications.enable();
+      $q.notify({
+        type: 'positive',
+        message: 'Notificările browser au fost activate',
+        icon: 'las la-check',
+        position: 'top',
+      });
+    } else {
+      // Need to request permission first
+      void handleRequestPermission();
+    }
+  } else {
+    // Disable notifications
+    browserNotifications.disable();
+    $q.notify({
+      type: 'info',
+      message: 'Notificările browser au fost dezactivate',
+      icon: 'las la-info-circle',
+      position: 'top',
+    });
+  }
+}
+
+/**
+ * Request browser notification permission
+ */
+async function handleRequestPermission() {
+  const granted = await browserNotifications.requestPermission();
+
+  if (granted) {
+    $q.notify({
+      type: 'positive',
+      message: 'Notificările au fost activate cu succes!',
+      icon: 'las la-check',
+      position: 'top',
+    });
+
+    // Show a test notification
+    browserNotifications.showSimpleNotification(
+      'Notificări activate',
+      'Vei primi notificări pentru alerte importante'
+    );
+  } else {
+    $q.notify({
+      type: 'warning',
+      message: 'Pentru a activa notificările, permite accesul în browser',
+      icon: 'las la-exclamation-triangle',
+      position: 'top',
+    });
+  }
+}
+
 const getPriorityColor = (priority: string) => {
   const colors: Record<string, string> = {
     urgent: 'negative',
@@ -514,6 +618,12 @@ onMounted(() => {
 
 .preferences-content
   padding-bottom: 80px
+
+.browser-notifications-card
+  margin: var(--space-md)
+  background: var(--color-surface)
+  border-radius: var(--radius-lg)
+  overflow: hidden
 
 .category-tabs
   background: var(--color-surface)

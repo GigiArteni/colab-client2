@@ -45,6 +45,11 @@
 
     <!-- Page Container -->
     <q-page-container class="app-page-container">
+      <!-- Notification Permission Banner -->
+      <div class="notification-banner-wrapper">
+        <NotificationPermissionBanner />
+      </div>
+
       <router-view v-slot="{ Component }">
         <transition name="fade" mode="out-in">
           <component :is="Component" />
@@ -163,6 +168,7 @@ import { useProfileStore } from 'src/stores/profile';
 import { useEntityStore } from 'src/stores/entity';
 import { clearAppData } from 'src/boot/appInit';
 import AlertNotificationCenter from 'src/components/AlertNotificationCenter.vue';
+import NotificationPermissionBanner from 'src/components/NotificationPermissionBanner.vue';
 
 const router = useRouter();
 const route = useRoute();
@@ -275,6 +281,12 @@ async function handleLogout(): Promise<void> {
 // Page Container
 .app-page-container
   background: var(--color-background)
+
+// Notification Banner
+.notification-banner-wrapper
+  padding: var(--space-md) var(--space-md) 0 var(--space-md)
+  max-width: 800px
+  margin: 0 auto
 
 // Bottom Navigation
 .app-footer
