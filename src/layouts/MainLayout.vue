@@ -131,6 +131,16 @@
               <q-icon name="las la-chevron-right" size="20px" color="grey-5" />
             </q-item-section>
           </q-item>
+          <q-item clickable v-close-popup to="/alert-preferences">
+            <q-item-section avatar>
+              <q-icon name="las la-cog" size="24px" />
+            </q-item-section>
+            <q-item-section>Preferințe Notificări</q-item-section>
+            <q-item-section side>
+              <q-icon name="las la-chevron-right" size="20px" color="grey-5" />
+            </q-item-section>
+          </q-item>
+          <q-separator />
           <q-item clickable v-close-popup @click="confirmLogout">
             <q-item-section avatar>
               <q-icon name="las la-sign-out-alt" size="24px" color="negative" />

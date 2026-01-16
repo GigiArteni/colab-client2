@@ -35,13 +35,24 @@
             <span>Notificări</span>
             <q-badge v-if="alertsStore.unreadCount > 0" color="negative" :label="alertsStore.unreadCount" class="q-ml-sm" />
           </div>
-          <q-btn
-            flat
-            round
-            dense
-            icon="las la-times"
-            @click="showDrawer = false"
-          />
+          <div>
+            <q-btn
+              flat
+              round
+              dense
+              icon="las la-cog"
+              @click="goToPreferences"
+            >
+              <q-tooltip>Preferințe</q-tooltip>
+            </q-btn>
+            <q-btn
+              flat
+              round
+              dense
+              icon="las la-times"
+              @click="showDrawer = false"
+            />
+          </div>
         </q-card-section>
 
         <q-separator />
@@ -194,11 +205,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
 import { useAlertsStore } from 'src/stores/alerts';
 import type { Alert } from 'src/types';
 
+const router = useRouter();
 const $q = useQuasar();
 const alertsStore = useAlertsStore();
 
@@ -222,6 +235,11 @@ const alerts = computed(() => {
 });
 
 // Methods
+function goToPreferences(): void {
+  showDrawer.value = false;
+  void router.push('/alert-preferences');
+}
+
 async function reloadAlerts(): Promise<void> {
   const dismissed = selectedFilter.value === 'all' ? undefined : false;
   await alertsStore.fetchAlerts({ dismissed });
@@ -333,6 +351,14 @@ function formatDateTime(dateString: string): string {
 // Lifecycle
 onMounted(() => {
   void reloadAlerts();
+
+  // Subscribe to real-time updates
+  alertsStore.subscribeToAlerts();
+});
+
+onUnmounted(() => {
+  // Cleanup WebSocket subscription
+  alertsStore.unsubscribeFromAlerts();
 });
 </script>
 
