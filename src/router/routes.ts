@@ -81,6 +81,22 @@ const routes: RouteRecordRaw[] = [
         name: 'subscription-detail',
         component: () => import('pages/subscriptions/SubscriptionDetailPage.vue'),
       },
+      // Meters
+      {
+        path: 'meters',
+        name: 'meters',
+        component: () => import('pages/meters/MeterListPage.vue'),
+      },
+      {
+        path: 'meters/:meterId',
+        name: 'meter-detail',
+        component: () => import('pages/meters/MeterDetailPage.vue'),
+      },
+      {
+        path: 'meters/:meterId/submit-reading',
+        name: 'meter-submit-reading',
+        component: () => import('pages/meters/MeterSubmitReadingPage.vue'),
+      },
       // Payments
       {
         path: 'payments/success',

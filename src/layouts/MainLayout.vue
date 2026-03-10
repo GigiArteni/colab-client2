@@ -184,6 +184,7 @@ const showUserMenu = ref(false);
 const navItems = [
   { to: '/dashboard', icon: 'las la-home', labelShort: 'nav.dashboardShort' },
   { to: '/invoices', icon: 'las la-file-invoice-dollar', labelShort: 'nav.invoicesShort' },
+  { to: '/meters', icon: 'las la-tachometer-alt', labelShort: 'nav.metersShort' },
   { to: '/subscriptions', icon: 'las la-clipboard-list', labelShort: 'nav.subscriptionsShort' },
   { to: '/profile', icon: 'las la-user', labelShort: 'nav.profileShort' },
 ];

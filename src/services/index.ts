@@ -11,3 +11,4 @@ export { invoiceService } from './invoice.service';
 export { usageService } from './usage.service';
 export { paymentService } from './payment.service';
 export { alertService } from './alert.service';
+export { meterService } from './meter.service';

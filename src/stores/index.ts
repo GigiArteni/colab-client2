@@ -30,3 +30,9 @@ export default defineStore((/* { ssrContext } */) => {
 
   return pinia;
 });
+
+// Export stores
+export { useAuthStore } from './auth';
+export { useProfileStore } from './profile';
+export { useEntityStore } from './entity';
+export { useMeterStore } from './meter';

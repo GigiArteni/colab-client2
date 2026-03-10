@@ -5,6 +5,7 @@
 
 export * from './auth.types';
 export * from './entity.types';
+export * from './meter.types';
 export * from './subscription.types';
 export * from './invoice.types';
 export * from './usage.types';

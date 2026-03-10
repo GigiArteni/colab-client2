@@ -9,7 +9,7 @@
       :alerts="contextAlerts.alerts.value"
       :dismissible="true"
       :actionable="true"
-      action-label="Vezi detalii"
+      :action-label="$t('common.viewDetails')"
       @dismiss="contextAlerts.dismissAlert"
       class="q-mb-md"
     />
@@ -59,8 +59,8 @@
               </div>
             </div>
             <div class="col-6 col-md-3">
-              <div class="text-caption text-grey">{{ $t('invoices.total') }}</div>
-              <div class="text-h6 text-primary">{{ formatCurrency(Number(invoice.total)) }}</div>
+              <div class="text-caption text-grey">{{ $t('invoices.totalPayable') }}</div>
+              <div class="text-h6 text-primary">{{ formatCurrency(Number(invoice.total_payable)) }}</div>
             </div>
             <div class="col-6 col-md-3">
               <div class="text-caption text-grey">{{ $t('invoices.balanceDue') }}</div>
@@ -69,6 +69,53 @@
               </div>
             </div>
           </div>
+        </q-card-section>
+      </q-card>
+
+      <!-- Overdue Warning -->
+      <q-banner v-if="invoice.is_overdue" class="bg-negative text-white q-mb-md" rounded>
+        <template #avatar>
+          <q-icon name="las la-exclamation-triangle" />
+        </template>
+        <div class="text-subtitle1">{{ $t('invoices.overdueWarning') }}</div>
+        <div class="text-caption">
+          {{ $t('invoices.dueDate') }}: {{ formatDate(invoice.due_date) }}
+        </div>
+      </q-banner>
+
+      <!-- Penalty Details (for penalty invoices) -->
+      <q-card v-if="isPenalty && invoice.penalty_info" class="q-mb-md">
+        <q-card-section>
+          <div class="row items-center q-mb-md">
+            <q-icon name="las la-percentage" size="32px" color="deep-orange" class="q-mr-md" />
+            <div class="col">
+              <div class="text-subtitle1 text-weight-medium text-deep-orange">
+                {{ $t('invoices.penaltyFor', { number: invoice.penalty_info.source_invoice_number }) }}
+              </div>
+              <div class="text-caption text-grey-7">
+                {{ $t('invoices.penaltyDays', { days: invoice.penalty_info.days }) }}
+                · {{ $t('invoices.penaltyRate', { rate: invoice.penalty_info.rate }) }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Penalty Periods Table -->
+          <q-table
+            v-if="invoice.penalty_info.periods?.length"
+            :rows="invoice.penalty_info.periods"
+            :columns="penaltyColumns"
+            flat bordered dense hide-bottom
+            row-key="start"
+            :rows-per-page-options="[0]"
+          />
+
+          <!-- Link to source invoice -->
+          <q-btn
+            flat color="primary" icon="las la-external-link-alt"
+            :label="$t('invoices.viewSourceInvoice')"
+            @click="goToInvoice(invoice.penalty_info.source_invoice_id)"
+            class="q-mt-md"
+          />
         </q-card-section>
       </q-card>
 
@@ -81,6 +128,72 @@
           <div class="text-body1">
             {{ formatDate(invoice.from_date) }} - {{ formatDate(invoice.to_date) }}
           </div>
+        </q-card-section>
+      </q-card>
+
+      <!-- Subsidy Information -->
+      <q-card v-if="invoice.subsidy_amount && Number(invoice.subsidy_amount) > 0" class="q-mb-md bg-positive-1">
+        <q-card-section>
+          <div class="row items-center q-mb-md">
+            <q-icon name="las la-hand-holding-usd" size="32px" color="positive" class="q-mr-md" />
+            <div class="col">
+              <div class="text-subtitle1 text-weight-medium text-positive">
+                {{ $t('invoices.subsidyApplied') }}
+              </div>
+              <div class="text-caption text-grey-7">
+                {{ $t('invoices.subsidyDescription') }}
+              </div>
+            </div>
+            <div class="text-h6 text-positive">
+              {{ formatCurrency(Number(invoice.subsidy_amount)) }}
+            </div>
+          </div>
+
+          <!-- Subsidy Details (if loaded) -->
+          <template v-if="invoice.subsidies && invoice.subsidies.length > 0">
+            <q-separator class="q-mb-md" />
+            <div v-for="subsidy in invoice.subsidies" :key="subsidy.id" class="q-mb-md">
+              <div class="row q-col-gutter-sm">
+                <!-- Subsidy Type -->
+                <div class="col-12 col-sm-6 col-md-3">
+                  <div class="text-caption text-grey-7">{{ $t('invoices.subsidyType') }}</div>
+                  <div class="text-body2 text-weight-medium">{{ subsidy.type_label }}</div>
+                </div>
+
+                <!-- Calculation Mode -->
+                <div class="col-12 col-sm-6 col-md-3">
+                  <div class="text-caption text-grey-7">{{ $t('invoices.calculationMode') }}</div>
+                  <div class="text-body2">{{ subsidy.calculation_mode_label }}</div>
+                </div>
+
+                <!-- Amount/Rate Details -->
+                <div class="col-12 col-sm-6 col-md-3" v-if="subsidy.calculation_mode === 'percentage'">
+                  <div class="text-caption text-grey-7">{{ $t('invoices.percentage') }}</div>
+                  <div class="text-body2">{{ subsidy.percentage }}%</div>
+                </div>
+                <div class="col-12 col-sm-6 col-md-3" v-else-if="subsidy.unit_rate">
+                  <div class="text-caption text-grey-7">{{ $t('invoices.unitRate') }}</div>
+                  <div class="text-body2">{{ subsidy.unit_rate }} RON/{{ subsidy.unit || 'unit' }}</div>
+                </div>
+                <div class="col-12 col-sm-6 col-md-3" v-else>
+                  <div class="text-caption text-grey-7">{{ $t('invoices.subsidyAmount') }}</div>
+                  <div class="text-body2">{{ formatCurrency(Number(subsidy.amount)) }}</div>
+                </div>
+
+                <!-- Regulatory Reference -->
+                <div class="col-12 col-sm-6 col-md-3" v-if="subsidy.regulatory_reference">
+                  <div class="text-caption text-grey-7">{{ $t('invoices.regulatoryReference') }}</div>
+                  <div class="text-body2">{{ subsidy.regulatory_reference }}</div>
+                </div>
+              </div>
+
+              <!-- Description -->
+              <div v-if="subsidy.description" class="q-mt-sm">
+                <div class="text-caption text-grey-7">{{ $t('invoices.description') }}</div>
+                <div class="text-body2">{{ subsidy.description }}</div>
+              </div>
+            </div>
+          </template>
         </q-card-section>
       </q-card>
 
@@ -126,13 +239,42 @@
               </q-item-section>
             </q-item>
 
-            <q-item class="bg-grey-2">
+            <q-item v-if="invoice.discount_amount && Number(invoice.discount_amount) > 0">
               <q-item-section>
-                <q-item-label class="text-h6">{{ $t('invoices.total') }}</q-item-label>
+                <q-item-label>{{ $t('invoices.discount') }}</q-item-label>
               </q-item-section>
               <q-item-section side>
-                <q-item-label class="text-h6 text-primary">
-                  {{ formatCurrency(Number(invoice.total)) }}
+                <q-item-label class="text-negative">-{{ formatCurrency(Number(invoice.discount_amount)) }}</q-item-label>
+              </q-item-section>
+            </q-item>
+
+            <q-item class="bg-grey-2">
+              <q-item-section>
+                <q-item-label class="text-weight-medium">{{ $t('invoices.grandTotal') }}</q-item-label>
+              </q-item-section>
+              <q-item-section side>
+                <q-item-label class="text-weight-medium">
+                  {{ formatCurrency(Number(invoice.grand_total)) }}
+                </q-item-label>
+              </q-item-section>
+            </q-item>
+
+            <q-item v-if="invoice.subsidy_amount && Number(invoice.subsidy_amount) > 0">
+              <q-item-section>
+                <q-item-label class="text-positive">{{ $t('invoices.subsidyDeduction') }}</q-item-label>
+              </q-item-section>
+              <q-item-section side>
+                <q-item-label class="text-positive">-{{ formatCurrency(Number(invoice.subsidy_amount)) }}</q-item-label>
+              </q-item-section>
+            </q-item>
+
+            <q-item class="bg-primary text-white">
+              <q-item-section>
+                <q-item-label class="text-h6">{{ $t('invoices.totalPayable') }}</q-item-label>
+              </q-item-section>
+              <q-item-section side>
+                <q-item-label class="text-h6">
+                  {{ formatCurrency(Number(invoice.total_payable)) }}
                 </q-item-label>
               </q-item-section>
             </q-item>
@@ -196,6 +338,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import { useEntityStore } from 'src/stores/entity';
 import { invoiceService } from 'src/services/invoice.service';
 import { useContextAlerts } from 'src/composables/useContextAlerts';
@@ -204,6 +347,7 @@ import type { Invoice } from 'src/types';
 
 const route = useRoute();
 const router = useRouter();
+const { t } = useI18n();
 const entityStore = useEntityStore();
 
 // Context alerts for this invoice
@@ -217,13 +361,36 @@ const contextAlerts = useContextAlerts({
 const isLoading = ref(true);
 const invoice = ref<Invoice | null>(null);
 
-// Calculate balance due from total minus paid receipts
+// Calculate balance due - prefer backend-calculated remaining_amount
 const balanceDue = computed(() => {
   if (!invoice.value) return 0;
-  const total = Number(invoice.value.total) || 0;
-  const paidAmount = invoice.value.receipts?.reduce((sum, r) => sum + Number(r.amount), 0) || 0;
-  return Math.max(0, total - paidAmount);
+  if (invoice.value.remaining_amount !== undefined) {
+    return Math.max(0, Number(invoice.value.remaining_amount) || 0);
+  }
+  const totalPayable = Number(invoice.value.total_payable) || 0;
+  const paidAmount = invoice.value.receipts
+    ?.filter(r => r.is_completed)
+    .reduce((sum, r) => sum + Number(r.amount), 0) || 0;
+  return Math.max(0, totalPayable - paidAmount);
 });
+
+const isPenalty = computed(() => invoice.value?.type === 'late-payment-penalty');
+
+const penaltyColumns = computed(() => [
+  { name: 'start', label: t('invoices.penaltyPeriodFrom'), field: 'start', align: 'left' as const },
+  { name: 'end', label: t('invoices.penaltyPeriodTo'), field: 'end', align: 'left' as const },
+  { name: 'days', label: t('invoices.penaltyPeriodDays'), field: 'days', align: 'center' as const },
+  { name: 'balance', label: t('invoices.penaltyPeriodBalance'), field: 'balance', align: 'right' as const,
+    format: (val: number) => formatCurrency(val ?? 0) },
+  { name: 'daily_amount', label: t('invoices.penaltyPeriodDaily'), field: 'daily_amount', align: 'right' as const,
+    format: (val: number) => formatCurrency(val ?? 0) },
+  { name: 'period_total', label: t('invoices.penaltyPeriodTotal'), field: 'period_total', align: 'right' as const,
+    format: (val: number) => formatCurrency(val ?? 0) },
+]);
+
+function goToInvoice(id: string): void {
+  void router.push(`/invoices/${id}`);
+}
 
 const isOverdue = computed(() => {
   if (!invoice.value) return false;

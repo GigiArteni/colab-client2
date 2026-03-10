@@ -5,6 +5,7 @@ import {
   createWebHashHistory,
   createWebHistory,
 } from 'vue-router';
+import { LocalStorage } from 'quasar';
 import routes from './routes';
 
 /*
@@ -31,6 +32,27 @@ export default defineRouter(function (/* { store, ssrContext } */) {
     // quasar.conf.js -> build -> vueRouterMode
     // quasar.conf.js -> build -> publicPath
     history: createHistory(process.env.VUE_ROUTER_BASE),
+  });
+
+  // Navigation guard for authentication
+  Router.beforeEach((to, from, next) => {
+    const isAuthenticated = !!LocalStorage.getItem('access_token');
+
+    // Check if route requires auth
+    if (to.meta.requiresAuth && !isAuthenticated) {
+      // Redirect to login with return URL
+      return next({
+        path: '/auth/login',
+        query: { redirect: to.fullPath },
+      });
+    }
+
+    // Check if route is for guests only
+    if (to.meta.requiresGuest && isAuthenticated) {
+      return next('/dashboard');
+    }
+
+    next();
   });
 
   return Router;

@@ -1,1 +1,520 @@
-// app global css in Sass form
+// ===========================================
+// CUSTOMER PORTAL - GLOBAL STYLES
+// ===========================================
+
+// Import Inter font (modern, clean, highly readable)
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap')
+
+// ===========================================
+// CSS CUSTOM PROPERTIES (for multi-tenant theming)
+// ===========================================
+\:root
+  // Colors (can be overridden per-entity)
+  --color-primary: #2563EB
+  --color-primary-light: #3B82F6
+  --color-primary-dark: #1D4ED8
+
+  --color-background: #F8FAFC
+  --color-surface: #FFFFFF
+  --color-surface-elevated: #FFFFFF
+
+  --color-text-primary: #1E293B
+  --color-text-secondary: #64748B
+  --color-text-muted: #94A3B8
+
+  --color-border: #E2E8F0
+  --color-border-light: #F1F5F9
+
+  // Shadows
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05)
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1)
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)
+
+  // Spacing
+  --space-xs: 4px
+  --space-sm: 8px
+  --space-md: 16px
+  --space-lg: 24px
+  --space-xl: 32px
+  --space-2xl: 48px
+
+  // Border radius
+  --radius-sm: 4px
+  --radius-md: 8px
+  --radius-lg: 12px
+  --radius-xl: 16px
+  --radius-full: 9999px
+
+  // Transitions
+  --transition-fast: 150ms ease
+  --transition-normal: 250ms ease
+  --transition-slow: 350ms ease
+
+// ===========================================
+// BASE STYLES
+// ===========================================
+body
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif
+  -webkit-font-smoothing: antialiased
+  -moz-osx-font-smoothing: grayscale
+  color: var(--color-text-primary)
+  background-color: var(--color-background)
+
+// ===========================================
+// UTILITY CLASSES
+// ===========================================
+
+// Text colors
+.text-primary
+  color: var(--color-text-primary)
+.text-secondary
+  color: var(--color-text-secondary)
+.text-muted
+  color: var(--color-text-muted)
+
+// Backgrounds
+.bg-surface
+  background-color: var(--color-surface)
+.bg-background
+  background-color: var(--color-background)
+
+// Shadows
+.shadow-sm
+  box-shadow: var(--shadow-sm)
+.shadow-md
+  box-shadow: var(--shadow-md)
+.shadow-lg
+  box-shadow: var(--shadow-lg)
+
+// ===========================================
+// AUTH PAGE SPECIFIC STYLES
+// ===========================================
+.auth-container
+  min-height: 100vh
+  display: flex
+  flex-direction: column
+  background: linear-gradient(135deg, var(--color-background) 0%, #E2E8F0 100%)
+
+.auth-card
+  background: var(--color-surface)
+  border-radius: var(--radius-xl)
+  box-shadow: var(--shadow-xl)
+  width: 100%
+  max-width: 420px
+  padding: var(--space-xl)
+
+  @media (max-width: 480px)
+    border-radius: 0
+    box-shadow: none
+    max-width: 100%
+    min-height: 100vh
+
+.auth-header
+  text-align: center
+  margin-bottom: var(--space-xl)
+
+.auth-logo
+  width: 48px
+  height: 48px
+  margin-bottom: var(--space-md)
+
+.auth-title
+  font-size: 1.5rem
+  font-weight: 600
+  color: var(--color-text-primary)
+  margin-bottom: var(--space-xs)
+
+.auth-subtitle
+  font-size: 0.875rem
+  color: var(--color-text-secondary)
+
+// ===========================================
+// STEP INDICATOR
+// ===========================================
+.step-indicator
+  display: flex
+  justify-content: center
+  gap: var(--space-sm)
+  margin-bottom: var(--space-lg)
+
+.step-dot
+  width: 8px
+  height: 8px
+  border-radius: var(--radius-full)
+  background-color: var(--color-border)
+  transition: all var(--transition-normal)
+
+  &.active
+    background-color: var(--color-primary)
+    width: 24px
+
+  &.completed
+    background-color: var(--color-primary)
+
+// ===========================================
+// OTP INPUT STYLES
+// ===========================================
+.otp-container
+  display: flex
+  justify-content: center
+  gap: var(--space-sm)
+
+.otp-digit
+  width: 48px
+  height: 56px
+
+  input
+    text-align: center
+    font-size: 1.5rem
+    font-weight: 600
+    letter-spacing: 0
+
+  &.q-field--outlined .q-field__control
+    border-radius: var(--radius-md)
+
+  &.q-field--focused .q-field__control
+    border-color: var(--color-primary)
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1)
+
+  @media (max-width: 380px)
+    width: 42px
+    height: 50px
+
+    input
+      font-size: 1.25rem
+
+// ===========================================
+// CHANNEL SELECTION
+// ===========================================
+.channel-option
+  border: 2px solid var(--color-border)
+  border-radius: var(--radius-lg)
+  padding: var(--space-md)
+  cursor: pointer
+  transition: all var(--transition-fast)
+
+  &:hover
+    border-color: var(--color-primary-light)
+    background-color: rgba(37, 99, 235, 0.02)
+
+  &.selected
+    border-color: var(--color-primary)
+    background-color: rgba(37, 99, 235, 0.05)
+
+.channel-icon
+  width: 40px
+  height: 40px
+  border-radius: var(--radius-full)
+  background-color: var(--color-background)
+  display: flex
+  align-items: center
+  justify-content: center
+  font-size: 1.25rem
+  color: var(--color-primary)
+
+// ===========================================
+// FORM ELEMENTS
+// ===========================================
+.portal-input
+  .q-field__control
+    border-radius: var(--radius-md)
+
+  &.q-field--outlined.q-field--focused .q-field__control
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1)
+
+.portal-btn
+  border-radius: var(--radius-md)
+  font-weight: 500
+  text-transform: none
+  letter-spacing: 0
+
+  &.portal-btn--primary
+    background: var(--color-primary) !important
+
+  &.portal-btn--lg
+    padding: 14px 24px
+    font-size: 1rem
+
+// ===========================================
+// TRANSITIONS FOR PAGE/STEP CHANGES
+// ===========================================
+.fade-enter-active,
+.fade-leave-active
+  transition: opacity var(--transition-normal)
+
+.fade-enter-from,
+.fade-leave-to
+  opacity: 0
+
+.slide-up-enter-active,
+.slide-up-leave-active
+  transition: all var(--transition-normal)
+
+.slide-up-enter-from
+  opacity: 0
+  transform: translateY(20px)
+
+.slide-up-leave-to
+  opacity: 0
+  transform: translateY(-20px)
+
+// ===========================================
+// APP PAGE STYLES
+// ===========================================
+
+// Page container with proper spacing for bottom nav
+.q-page
+  padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px) + var(--space-md)) !important
+
+// App card styles
+.app-card
+  background: var(--color-surface)
+  border-radius: var(--radius-lg)
+  box-shadow: var(--shadow-sm)
+  border: 1px solid var(--color-border-light)
+  overflow: hidden
+
+  &--clickable
+    cursor: pointer
+    transition: all var(--transition-fast)
+
+    &:active
+      transform: scale(0.98)
+      background: var(--color-background)
+
+// App section header
+.app-section
+  margin-bottom: var(--space-lg)
+
+.app-section__header
+  display: flex
+  align-items: center
+  justify-content: space-between
+  margin-bottom: var(--space-md)
+
+.app-section__title
+  font-size: 1rem
+  font-weight: 600
+  color: var(--color-text-primary)
+  margin: 0
+
+.app-section__action
+  font-size: 0.8125rem
+  font-weight: 500
+  color: var(--color-primary)
+  text-decoration: none
+
+  &:active
+    opacity: 0.7
+
+// Stats cards row
+.stats-row
+  display: flex
+  gap: var(--space-sm)
+  overflow-x: auto
+  padding-bottom: var(--space-xs)
+  margin: 0 calc(-1 * var(--space-md))
+  padding-left: var(--space-md)
+  padding-right: var(--space-md)
+  scrollbar-width: none
+  -ms-overflow-style: none
+
+  &::-webkit-scrollbar
+    display: none
+
+.stat-card
+  flex: 0 0 auto
+  min-width: 140px
+  padding: var(--space-md)
+  border-radius: var(--radius-lg)
+  color: white
+
+  &--danger
+    background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%)
+
+  &--warning
+    background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%)
+
+  &--success
+    background: linear-gradient(135deg, #10B981 0%, #059669 100%)
+
+  &--primary
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%)
+
+.stat-card__label
+  font-size: 0.75rem
+  font-weight: 500
+  opacity: 0.9
+  margin-bottom: var(--space-xs)
+
+.stat-card__value
+  font-size: 1.25rem
+  font-weight: 700
+  line-height: 1.2
+
+.stat-card__sub
+  font-size: 0.6875rem
+  opacity: 0.8
+  margin-top: 2px
+
+// Empty state
+.empty-state
+  text-align: center
+  padding: var(--space-2xl) var(--space-lg)
+  color: var(--color-text-muted)
+
+.empty-state__icon
+  font-size: 48px
+  margin-bottom: var(--space-md)
+  opacity: 0.5
+
+.empty-state__title
+  font-size: 1rem
+  font-weight: 500
+  color: var(--color-text-secondary)
+  margin-bottom: var(--space-xs)
+
+.empty-state__text
+  font-size: 0.875rem
+
+// List items for app
+.app-list-item
+  display: flex
+  align-items: center
+  gap: var(--space-md)
+  padding: var(--space-md)
+  background: var(--color-surface)
+  border-radius: var(--radius-lg)
+  margin-bottom: var(--space-sm)
+  transition: all var(--transition-fast)
+  cursor: pointer
+  text-decoration: none
+  color: inherit
+
+  &:active
+    background: var(--color-background)
+    transform: scale(0.99)
+
+  &:last-child
+    margin-bottom: 0
+
+.app-list-item__icon
+  width: 44px
+  height: 44px
+  border-radius: var(--radius-md)
+  display: flex
+  align-items: center
+  justify-content: center
+  flex-shrink: 0
+
+.app-list-item__content
+  flex: 1
+  min-width: 0
+
+.app-list-item__title
+  font-size: 0.9375rem
+  font-weight: 500
+  color: var(--color-text-primary)
+  margin-bottom: 2px
+  white-space: nowrap
+  overflow: hidden
+  text-overflow: ellipsis
+
+.app-list-item__subtitle
+  font-size: 0.8125rem
+  color: var(--color-text-secondary)
+  white-space: nowrap
+  overflow: hidden
+  text-overflow: ellipsis
+
+.app-list-item__meta
+  text-align: right
+  flex-shrink: 0
+
+.app-list-item__value
+  font-size: 0.9375rem
+  font-weight: 600
+  color: var(--color-text-primary)
+
+.app-list-item__status
+  font-size: 0.75rem
+  font-weight: 500
+  padding: 2px 8px
+  border-radius: var(--radius-full)
+  display: inline-block
+
+// Status badges
+.status-badge
+  font-size: 0.6875rem
+  font-weight: 600
+  padding: 3px 8px
+  border-radius: var(--radius-full)
+  text-transform: uppercase
+  letter-spacing: 0.02em
+
+  &--paid
+    background: rgba(16, 185, 129, 0.1)
+    color: #059669
+
+  &--pending, &--sent
+    background: rgba(245, 158, 11, 0.1)
+    color: #D97706
+
+  &--overdue
+    background: rgba(239, 68, 68, 0.1)
+    color: #DC2626
+
+  &--active
+    background: rgba(37, 99, 235, 0.1)
+    color: var(--color-primary)
+
+// Page header (for detail pages)
+.page-header
+  display: flex
+  align-items: center
+  gap: var(--space-md)
+  margin-bottom: var(--space-lg)
+
+.page-header__back
+  width: 40px
+  height: 40px
+  border-radius: var(--radius-md)
+  display: flex
+  align-items: center
+  justify-content: center
+  background: var(--color-surface)
+  color: var(--color-text-secondary)
+  cursor: pointer
+  transition: all var(--transition-fast)
+
+  &:active
+    background: var(--color-border-light)
+
+.page-header__title
+  font-size: 1.125rem
+  font-weight: 600
+  color: var(--color-text-primary)
+  margin: 0
+
+// Utility icon backgrounds
+.utility-icon
+  width: 44px
+  height: 44px
+  border-radius: var(--radius-md)
+  display: flex
+  align-items: center
+  justify-content: center
+  color: white
+
+  &--gas
+    background: linear-gradient(135deg, #F97316 0%, #EA580C 100%)
+
+  &--electricity
+    background: linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%)
+
+  &--water
+    background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)
+
+  &--sewage
+    background: linear-gradient(135deg, #14B8A6 0%, #0D9488 100%)
