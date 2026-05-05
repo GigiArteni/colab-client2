@@ -1,0 +1,14 @@
+node_modules
+dist
+.quasar
+.git
+.github
+.vscode
+.idea
+*.log
+coverage
+.env
+.env.*
+!.env.example
+README.md
+*.md

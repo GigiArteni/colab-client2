@@ -1,0 +1,186 @@
+name: Deploy → Production
+
+on:
+    push:
+        branches: [main]
+    workflow_dispatch:
+        inputs:
+            confirm:
+                description: 'Type "deploy" to confirm manual production deploy'
+                required: true
+                type: string
+
+concurrency:
+    group: deploy-production
+    cancel-in-progress: false
+
+env:
+    REGISTRY: ghcr.io
+    IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+    guard:
+        runs-on: ubuntu-latest
+        if: github.event_name != 'workflow_dispatch' || github.event.inputs.confirm == 'deploy'
+        steps:
+            - run: echo "Guard passed (event=${{ github.event_name }})"
+
+    snapshot-current:
+        needs: guard
+        runs-on: ubuntu-latest
+        outputs:
+            previous_digest: ${{ steps.probe.outputs.digest }}
+        steps:
+            - id: probe
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  TOKEN=$(curl -fsS "https://ghcr.io/token?scope=repository:${{ env.IMAGE_NAME }}:pull" \
+                      -u "${{ github.actor }}:$GH_TOKEN" | jq -r .token)
+                  DIGEST=$(curl -sS \
+                      -H "Accept: application/vnd.oci.image.manifest.v1+json, application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.v2+json" \
+                      -H "Authorization: Bearer $TOKEN" \
+                      -I "https://ghcr.io/v2/${{ env.IMAGE_NAME }}/manifests/production-latest" \
+                      2>/dev/null | awk '/^docker-content-digest:/ {print $2}' | tr -d '\r' || true)
+                  echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
+                  echo "Previous digest: $DIGEST"
+
+    ci:
+        needs: guard
+        uses: ./.github/workflows/ci.yml
+        secrets: inherit
+
+    build:
+        needs: [ci, snapshot-current]
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+            packages: write
+        steps:
+            - uses: actions/checkout@v4
+            - uses: docker/setup-buildx-action@v3
+            - uses: docker/login-action@v3
+              with:
+                  registry: ${{ env.REGISTRY }}
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
+
+            - uses: docker/metadata-action@v5
+              id: meta
+              with:
+                  images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+                  tags: |
+                      type=sha,format=long
+                      type=raw,value=production
+                      type=raw,value=production-latest
+
+            - uses: docker/build-push-action@v5
+              with:
+                  context: .
+                  file: deploy/Dockerfile
+                  push: true
+                  tags: ${{ steps.meta.outputs.tags }}
+                  labels: ${{ steps.meta.outputs.labels }}
+                  cache-from: type=gha,scope=production
+                  cache-to: type=gha,mode=max,scope=production
+                  provenance: false
+                  build-args: |
+                      API_URL=${{ vars.API_URL }}
+                      APP_PUSHER_APP_KEY=${{ vars.APP_PUSHER_APP_KEY }}
+                      APP_PUSHER_HOST=${{ vars.APP_PUSHER_HOST }}
+                      APP_PUSHER_AUTH_URL=${{ vars.APP_PUSHER_AUTH_URL }}
+                      APP_PUSHER_PORT=443
+                      APP_PUSHER_SCHEME=https
+
+    deploy:
+        needs: build
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+        environment:
+            name: production
+            url: https://${{ vars.PRODUCTION_HOST }}
+        steps:
+            - name: Trigger Coolify redeploy
+              run: |
+                  curl -fsS -X GET \
+                    -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" \
+                    "${{ secrets.COOLIFY_PRODUCTION_WEBHOOK }}"
+
+            - name: Wait for healthy rollout
+              run: |
+                  for i in $(seq 1 40); do
+                      if curl -fsSk --max-time 5 "https://${{ vars.PRODUCTION_HOST }}/" >/dev/null 2>&1; then
+                          echo "Healthy after $((i*15))s"
+                          break
+                      fi
+                      sleep 15
+                      if [ "$i" = "40" ]; then
+                          echo "Production did not become healthy within 10 minutes." >&2
+                          exit 1
+                      fi
+                  done
+
+            - name: Post-deploy smoke test
+              # Failure triggers rollback-on-failure below.
+              run: |
+                  set -e
+                  HOST="${{ vars.PRODUCTION_HOST }}"
+                  code() { curl -sSk --max-time 10 -o /dev/null -w "%{http_code}" "$@"; }
+                  [ "$(code "https://$HOST/")" = "200" ] || { echo "FAIL: / not 200"; exit 1; }
+                  [ "$(code "https://$HOST/__deep_$RANDOM")" = "200" ] || { echo "FAIL: SPA fallback broken"; exit 1; }
+                  SW_CACHE=$(curl -sSk -I "https://$HOST/sw.js" | grep -i '^cache-control:' || true)
+                  echo "$SW_CACHE" | grep -q 'no-cache' || { echo "FAIL: sw.js missing no-cache: $SW_CACHE"; exit 1; }
+                  END=$(echo | openssl s_client -servername "$HOST" -connect "$HOST:443" 2>/dev/null | openssl x509 -noout -enddate | cut -d= -f2)
+                  DAYS=$(( ( $(date -d "$END" +%s) - $(date +%s) ) / 86400 ))
+                  [ "$DAYS" -ge 21 ] || { echo "FAIL: prod cert has only $DAYS days"; exit 1; }
+                  echo "Smoke passed: / 200, SPA fallback 200, sw.js no-cache, cert ${DAYS}d"
+
+            - uses: actions/checkout@v4
+              if: success()
+
+            - name: Tag release
+              if: success()
+              run: |
+                  git config user.name  "github-actions[bot]"
+                  git config user.email "github-actions[bot]@users.noreply.github.com"
+                  TAG="prod-$(date -u +%Y%m%d-%H%M%S)-${GITHUB_SHA::7}"
+                  git tag "$TAG"
+                  git push origin "$TAG"
+
+    rollback-on-failure:
+        needs: [deploy, snapshot-current]
+        if: failure() && needs.snapshot-current.outputs.previous_digest != ''
+        runs-on: ubuntu-latest
+        environment: production
+        steps:
+            - name: Pin Coolify to previous digest
+              env:
+                  COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+                  API: ${{ vars.COOLIFY_API_URL }}
+                  UUID: ${{ secrets.COOLIFY_APP_UUID }}
+                  TAG: ghcr.io/${{ env.IMAGE_NAME }}@${{ needs.snapshot-current.outputs.previous_digest }}
+              run: |
+                  set -e
+                  if [ -z "$API" ] || [ -z "$UUID" ]; then
+                      echo "::error::COOLIFY_API_URL or COOLIFY_APP_UUID not set"
+                      exit 1
+                  fi
+                  curl -fsS -X PATCH "$API/applications/$UUID/envs" \
+                      -H "Authorization: Bearer $COOLIFY_TOKEN" \
+                      -H "Content-Type: application/json" \
+                      -d "{\"key\":\"IMAGE_TAG\",\"value\":\"$TAG\"}"
+                  curl -fsS -X POST "$API/applications/$UUID/deploy" \
+                      -H "Authorization: Bearer $COOLIFY_TOKEN"
+
+            - name: Wait for rollback healthy
+              run: |
+                  for i in $(seq 1 40); do
+                      if curl -fsSk --max-time 5 "https://${{ vars.PRODUCTION_HOST }}/" >/dev/null 2>&1; then
+                          echo "::notice::Auto-rollback succeeded"
+                          exit 0
+                      fi
+                      sleep 15
+                  done
+                  echo "::error::Auto-rollback did not become healthy"
+                  exit 1

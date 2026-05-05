@@ -1,0 +1,33 @@
+# TLS is terminated by Coolify's Traefik — Caddy serves plain HTTP on port 80.
+# PWA/Capacitor-aware: service worker needs `no-cache` on sw.js so updates ship.
+
+{
+    auto_https off
+    admin off
+}
+
+:80 {
+    root * /srv
+    encode zstd br gzip
+
+    try_files {path} /index.html
+
+    file_server
+
+    # Fingerprinted assets live under /assets/ (Vite default) — immutable cache.
+    # Scoping by path prefix (not extension) avoids accidentally matching
+    # root-level files like /sw.js that share a `.js` suffix.
+    @immutable path /assets/*
+    header @immutable Cache-Control "public, max-age=31536000, immutable"
+
+    # index.html + service worker + manifest: never cache — clients must get
+    # the latest to learn about new bundle hashes. Match root `/` too.
+    @nocache path / /index.html /sw.js /manifest.json /manifest.webmanifest
+    header @nocache Cache-Control "no-cache, no-store, must-revalidate"
+
+    header {
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Permissions-Policy "geolocation=(self), microphone=(), camera=()"
+    }
+}

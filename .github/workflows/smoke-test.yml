@@ -1,0 +1,40 @@
+name: Smoke test
+
+on:
+    schedule:
+        - cron: "30 */6 * * *"   # every 6h, offset 30min from backend + ui2
+    workflow_dispatch:
+        inputs:
+            environment:
+                description: 'Target environment'
+                required: true
+                type: choice
+                default: production
+                options: [staging, production]
+
+jobs:
+    smoke:
+        runs-on: ubuntu-latest
+        environment: ${{ github.event.inputs.environment || 'production' }}
+        steps:
+            - name: Probe SPA + sw.js cache + TLS
+              run: |
+                  set -e
+                  ENV="${{ github.event.inputs.environment || 'production' }}"
+                  if [ "$ENV" = "staging" ]; then
+                      HOST="${{ vars.STAGING_HOST }}"
+                      THRESHOLD=7
+                  else
+                      HOST="${{ vars.PRODUCTION_HOST }}"
+                      THRESHOLD=21
+                  fi
+                  code() { curl -sSk --max-time 10 -o /dev/null -w "%{http_code}" "$@"; }
+                  [ "$(code "https://$HOST/")" = "200" ] || { echo "::error::/ not 200"; exit 1; }
+                  [ "$(code "https://$HOST/__deep_$RANDOM")" = "200" ] || { echo "::error::SPA fallback broken"; exit 1; }
+                  # PWA correctness: sw.js must be no-cache so clients pick up new bundles.
+                  SW_CACHE=$(curl -sSk -I "https://$HOST/sw.js" | grep -i '^cache-control:' || true)
+                  echo "$SW_CACHE" | grep -q 'no-cache' || { echo "::error::sw.js missing no-cache header: $SW_CACHE"; exit 1; }
+                  END=$(echo | openssl s_client -servername "$HOST" -connect "$HOST:443" 2>/dev/null | openssl x509 -noout -enddate | cut -d= -f2)
+                  DAYS=$(( ( $(date -d "$END" +%s) - $(date +%s) ) / 86400 ))
+                  [ "$DAYS" -ge "$THRESHOLD" ] || { echo "::error::cert has $DAYS days (threshold $THRESHOLD)"; exit 1; }
+                  echo "Smoke passed for $HOST ($ENV): / 200, SPA fallback 200, sw.js no-cache, cert ${DAYS}d"

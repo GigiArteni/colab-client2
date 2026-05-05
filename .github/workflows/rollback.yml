@@ -1,0 +1,82 @@
+name: Rollback
+
+on:
+    workflow_dispatch:
+        inputs:
+            environment:
+                description: 'Target environment'
+                required: true
+                type: choice
+                options: [staging, production]
+            image_tag:
+                description: 'Image tag to pin (e.g. sha-abc1234)'
+                required: true
+                type: string
+            confirm:
+                description: 'Type the environment name again to confirm'
+                required: true
+                type: string
+
+jobs:
+    rollback:
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+            packages: read
+        environment: ${{ github.event.inputs.environment }}
+        steps:
+            - name: Confirm
+              run: |
+                  if [ "${{ github.event.inputs.confirm }}" != "${{ github.event.inputs.environment }}" ]; then
+                      echo "Confirmation mismatch." >&2
+                      exit 1
+                  fi
+
+            - name: Verify image exists in GHCR
+              run: |
+                  TOKEN=$(curl -fsS "https://ghcr.io/token?scope=repository:${{ github.repository }}:pull" \
+                    -u "${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}" | jq -r .token)
+                  STATUS=$(curl -fsS -o /dev/null -w "%{http_code}" \
+                    -H "Accept: application/vnd.oci.image.manifest.v1+json, application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.v2+json" \
+                    -H "Authorization: Bearer $TOKEN" \
+                    "https://ghcr.io/v2/${{ github.repository }}/manifests/${{ github.event.inputs.image_tag }}")
+                  if [ "$STATUS" != "200" ]; then
+                      echo "Image tag not found (HTTP $STATUS)." >&2
+                      exit 1
+                  fi
+
+            - name: Pin Coolify to tag
+              env:
+                  COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+                  API: ${{ vars.COOLIFY_API_URL }}
+              run: |
+                  if [ -z "$API" ]; then
+                      echo "::error::COOLIFY_API_URL not set"
+                      exit 1
+                  fi
+                  UUID="${{ secrets.COOLIFY_APP_UUID }}"
+                  if [ "${{ github.event.inputs.environment }}" = "staging" ]; then
+                      UUID="${{ secrets.COOLIFY_STAGING_APP_UUID }}"
+                  fi
+                  curl -fsS -X PATCH "$API/applications/$UUID/envs" \
+                      -H "Authorization: Bearer $COOLIFY_TOKEN" \
+                      -H "Content-Type: application/json" \
+                      -d "{\"key\":\"IMAGE_TAG\",\"value\":\"${{ github.event.inputs.image_tag }}\"}"
+                  curl -fsS -X POST "$API/applications/$UUID/deploy" \
+                      -H "Authorization: Bearer $COOLIFY_TOKEN"
+
+            - name: Wait for healthy
+              run: |
+                  HOST="${{ vars.PRODUCTION_HOST }}"
+                  if [ "${{ github.event.inputs.environment }}" = "staging" ]; then
+                      HOST="${{ vars.STAGING_HOST }}"
+                  fi
+                  for i in $(seq 1 40); do
+                      if curl -fsSk --max-time 5 "https://$HOST/" >/dev/null 2>&1; then
+                          echo "Rollback healthy after $((i*15))s"
+                          exit 0
+                      fi
+                      sleep 15
+                  done
+                  echo "Rollback did not become healthy." >&2
+                  exit 1

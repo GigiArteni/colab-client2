@@ -1,0 +1,56 @@
+name: CI
+
+on:
+    pull_request:
+    push:
+        branches: [main, develop]
+    workflow_call:
+
+concurrency:
+    group: ci-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    lint:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: "22"
+                  cache: npm
+            - run: npm ci
+            - run: npm run lint
+
+    typecheck:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: "22"
+                  cache: npm
+            - run: npm ci
+            # Run Quasar's type preparation + tsc noEmit; validates TS without a full build.
+            - run: npm run postinstall
+            - run: npx tsc --noEmit
+
+    build-smoke:
+        # Proves the project builds with placeholder env vars — catches syntax/
+        # import errors without needing the deploy pipeline.
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: "22"
+                  cache: npm
+            - run: npm ci
+            - run: npm run build
+              env:
+                  API_URL: http://127.0.0.1/api/v1
+                  APP_PUSHER_APP_KEY: test-key
+                  APP_PUSHER_HOST: 127.0.0.1
+                  APP_PUSHER_PORT: 443
+                  APP_PUSHER_SCHEME: http
+                  APP_PUSHER_AUTH_URL: http://127.0.0.1/broadcasting/auth

@@ -1,0 +1,103 @@
+name: Deploy → Staging
+
+on:
+    push:
+        branches: [develop]
+    workflow_dispatch:
+
+concurrency:
+    group: deploy-staging
+    cancel-in-progress: false
+
+env:
+    REGISTRY: ghcr.io
+    IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+    ci:
+        uses: ./.github/workflows/ci.yml
+        secrets: inherit
+
+    build:
+        needs: ci
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+            packages: write
+        steps:
+            - uses: actions/checkout@v4
+            - uses: docker/setup-buildx-action@v3
+            - uses: docker/login-action@v3
+              with:
+                  registry: ${{ env.REGISTRY }}
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
+
+            - uses: docker/metadata-action@v5
+              id: meta
+              with:
+                  images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+                  tags: |
+                      type=sha,format=long
+                      type=raw,value=staging
+                      type=raw,value=staging-latest
+
+            - uses: docker/build-push-action@v5
+              with:
+                  context: .
+                  file: deploy/Dockerfile
+                  push: true
+                  tags: ${{ steps.meta.outputs.tags }}
+                  labels: ${{ steps.meta.outputs.labels }}
+                  cache-from: type=gha,scope=staging
+                  cache-to: type=gha,mode=max,scope=staging
+                  provenance: false
+                  build-args: |
+                      API_URL=${{ vars.API_URL_STAGING }}
+                      APP_PUSHER_APP_KEY=${{ vars.APP_PUSHER_APP_KEY_STAGING }}
+                      APP_PUSHER_HOST=${{ vars.APP_PUSHER_HOST_STAGING }}
+                      APP_PUSHER_AUTH_URL=${{ vars.APP_PUSHER_AUTH_URL_STAGING }}
+                      APP_PUSHER_PORT=443
+                      APP_PUSHER_SCHEME=https
+
+    deploy:
+        needs: build
+        runs-on: ubuntu-latest
+        environment:
+            name: staging
+            url: https://${{ vars.STAGING_HOST }}
+        steps:
+            - name: Trigger Coolify redeploy
+              run: |
+                  curl -fsS -X GET \
+                    -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" \
+                    "${{ secrets.COOLIFY_STAGING_WEBHOOK }}"
+
+            - name: Wait for healthy rollout
+              run: |
+                  for i in $(seq 1 40); do
+                      if curl -fsSk --max-time 5 "https://${{ vars.STAGING_HOST }}/" >/dev/null 2>&1; then
+                          echo "Healthy after $((i*15))s"
+                          break
+                      fi
+                      sleep 15
+                      if [ "$i" = "40" ]; then
+                          echo "Staging did not become healthy within 10 minutes" >&2
+                          exit 1
+                      fi
+                  done
+
+            - name: Post-deploy smoke test
+              run: |
+                  set -e
+                  HOST="${{ vars.STAGING_HOST }}"
+                  code() { curl -sSk --max-time 10 -o /dev/null -w "%{http_code}" "$@"; }
+                  [ "$(code "https://$HOST/")" = "200" ] || { echo "FAIL: / not 200"; exit 1; }
+                  [ "$(code "https://$HOST/__deep_$RANDOM")" = "200" ] || { echo "FAIL: SPA fallback broken"; exit 1; }
+                  # sw.js MUST be no-cache (PWA correctness)
+                  SW_CACHE=$(curl -sSk -I "https://$HOST/sw.js" | grep -i '^cache-control:' || true)
+                  echo "$SW_CACHE" | grep -q 'no-cache' || { echo "FAIL: sw.js missing no-cache: $SW_CACHE"; exit 1; }
+                  END=$(echo | openssl s_client -servername "$HOST" -connect "$HOST:443" 2>/dev/null | openssl x509 -noout -enddate | cut -d= -f2)
+                  DAYS=$(( ( $(date -d "$END" +%s) - $(date +%s) ) / 86400 ))
+                  [ "$DAYS" -ge 7 ] || { echo "FAIL: cert has only $DAYS days"; exit 1; }
+                  echo "Smoke passed: / 200, SPA fallback 200, sw.js no-cache, cert ${DAYS}d"
