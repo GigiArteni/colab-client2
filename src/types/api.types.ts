@@ -31,6 +31,7 @@ export interface PaginationLinks {
 
 export interface ApiError {
   message: string;
+  message_key?: string;
   errors?: Record<string, string[]>;
   status?: number;
 }

@@ -350,6 +350,18 @@ export default {
     },
   },
 
+  // Tenancy errors (keyed by error.message_key from BE)
+  tenancyError: {
+    tenant_unknown: 'We couldn\'t find your account. Please check your link or contact support.',
+    tenant_inactive: 'Your account is currently inactive. Please contact support for assistance.',
+    tenant_archived: 'This account has been archived. Please contact support if you need access.',
+    tenant_unavailable: 'The service is temporarily unavailable. Please try again shortly.',
+    tenant_required: 'Please use your personalised link to access this portal.',
+    tenant_required_for_route: 'Please use your personalised link to access this page.',
+    landlord_required: 'This page is not available through the customer portal.',
+    broadcast_no_tenant: 'Real-time updates are unavailable. Please refresh to see the latest data.',
+  },
+
   // Profile
   profile: {
     title: 'My Profile',

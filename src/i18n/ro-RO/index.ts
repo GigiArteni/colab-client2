@@ -352,6 +352,18 @@ export default {
     },
   },
 
+  // Erori de acces (cheie din error.message_key de la server)
+  tenancyError: {
+    tenant_unknown: 'Nu am putut găsi contul tău. Verifică link-ul sau contactează suportul.',
+    tenant_inactive: 'Contul tău este momentan inactiv. Contactează suportul pentru asistență.',
+    tenant_archived: 'Acest cont a fost arhivat. Contactează suportul dacă ai nevoie de acces.',
+    tenant_unavailable: 'Serviciul este temporar indisponibil. Te rugăm să încerci din nou.',
+    tenant_required: 'Te rugăm să folosești link-ul personalizat pentru a accesa portalul.',
+    tenant_required_for_route: 'Te rugăm să folosești link-ul personalizat pentru a accesa această pagină.',
+    landlord_required: 'Această pagină nu este disponibilă prin portalul clienților.',
+    broadcast_no_tenant: 'Actualizările în timp real sunt indisponibile. Reîncarcă pagina pentru datele recente.',
+  },
+
   // Profile
   profile: {
     title: 'Profilul Meu',

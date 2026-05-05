@@ -10,9 +10,13 @@ import axios, {
 import { useAuthStore } from 'src/stores/auth';
 import type { ApiError } from 'src/types';
 
-// Create axios instance
+// NOTE: this project currently has TWO axios instances (this one and
+// `src/boot/axios.ts`). Both now share the SAME env-var source
+// (`process.env.API_URL`) so baseURL matches across imports.
+// Follow-up: consolidate to one canonical instance — this one has better
+// queue-based refresh-token handling and should win.
 const api: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8081/v1',
+  baseURL: process.env.API_URL || 'http://localhost:8002/v1',
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',
@@ -112,16 +116,29 @@ api.interceptors.response.use(
       }
     }
 
-    return Promise.reject(new Error(error.message || 'Request failed'));
+    return Promise.reject(error);
   }
 );
 
 export default api;
 
-// Helper to extract error message from API response
-export function getErrorMessage(error: unknown): string {
+// Helper to extract error message from API response.
+// Pass `t` from `useI18n()` to get translated messages for `message_key` errors.
+export function getErrorMessage(
+  error: unknown,
+  t?: (key: string) => string,
+): string {
   if (axios.isAxiosError(error)) {
     const apiError = error.response?.data as ApiError | undefined;
+
+    if (apiError?.message_key && t) {
+      const i18nKey = `tenancyError.${apiError.message_key}`;
+      const translated = t(i18nKey);
+      // vue-i18n returns the key itself when translation is missing
+      if (translated !== i18nKey) {
+        return translated;
+      }
+    }
 
     if (apiError?.message) {
       return apiError.message;
