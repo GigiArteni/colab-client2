@@ -29,7 +29,7 @@ function createEchoInstance(accessToken: string): Echo {
     wsHost: process.env.APP_PUSHER_HOST || 'localhost',
     wsPort: parseInt(process.env.APP_PUSHER_PORT || '6001'),
     wssPort: parseInt(process.env.APP_PUSHER_PORT || '6001'),
-    forceTLS: false,
+    forceTLS: process.env.APP_PUSHER_SCHEME === 'https',
     enabledTransports: ['ws', 'wss'],
     disableStats: true,
     cluster: '',

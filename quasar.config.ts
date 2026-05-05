@@ -40,6 +40,8 @@ export default defineConfig((ctx) => {
         APP_PUSHER_APP_KEY: process.env.APP_PUSHER_APP_KEY || 'colab-key',
         APP_PUSHER_HOST: process.env.APP_PUSHER_HOST || 'localhost',
         APP_PUSHER_PORT: process.env.APP_PUSHER_PORT || '6001',
+        // 'https' in prod → enables forceTLS in Echo. Anything else → plain ws://.
+        APP_PUSHER_SCHEME: process.env.APP_PUSHER_SCHEME || 'http',
         APP_PUSHER_AUTH_URL: process.env.APP_PUSHER_AUTH_URL || 'http://localhost:8002/broadcasting/auth',
       },
 
