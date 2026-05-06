@@ -4,12 +4,12 @@
 
     <q-form @submit="handleSubmit" class="q-gutter-md">
       <p class="text-body2 text-grey">
-        Introdu adresa de email și îți vom trimite un link pentru resetarea parolei.
+        {{ $t('forgotPassword.hint') }}
       </p>
 
       <q-input
         v-model="email"
-        label="Email"
+        :label="$t('forgotPassword.emailLabel')"
         type="email"
         outlined
         :error="!!error"
@@ -24,7 +24,7 @@
         <template #avatar>
           <q-icon name="las la-check-circle" />
         </template>
-        Verifică-ți email-ul pentru instrucțiuni de resetare a parolei.
+        {{ $t('forgotPassword.checkEmail') }}
       </q-banner>
 
       <q-btn
@@ -35,12 +35,12 @@
         :loading="isLoading"
         :disable="isLoading || success"
       >
-        Trimite Link
+        {{ $t('forgotPassword.submit') }}
       </q-btn>
 
       <div class="text-center">
         <router-link to="/auth/login" class="text-primary">
-          {{ $t('common.back') }} la autentificare
+          {{ $t('forgotPassword.backToLogin') }}
         </router-link>
       </div>
     </q-form>
@@ -49,7 +49,10 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { authService } from 'src/services/auth.service';
+
+const { t } = useI18n();
 
 const email = ref('');
 const error = ref('');
@@ -58,7 +61,7 @@ const isLoading = ref(false);
 
 async function handleSubmit(): Promise<void> {
   if (!email.value.trim()) {
-    error.value = 'Introdu adresa de email';
+    error.value = t('forgotPassword.emailRequired');
     return;
   }
 
@@ -69,7 +72,7 @@ async function handleSubmit(): Promise<void> {
     await authService.forgotPassword(email.value);
     success.value = true;
   } catch (err) {
-    error.value = err instanceof Error ? err.message : 'A apărut o eroare';
+    error.value = err instanceof Error ? err.message : t('forgotPassword.genericError');
   } finally {
     isLoading.value = false;
   }
