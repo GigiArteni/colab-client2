@@ -4,7 +4,7 @@
  */
 
 import { api } from 'src/boot/axios';
-import type { Alert, PaginatedAlerts, AlertStats } from 'src/types';
+import type { Alert, AlertableType, PaginatedAlerts, AlertStats } from 'src/types/alert.types';
 
 /**
  * Get paginated alerts for current user's contact
@@ -67,9 +67,25 @@ export async function bulkDismissAlerts(
   return response.data.data;
 }
 
+/**
+ * Dismiss an alert on a polymorphic resource (invoice/usage/meter)
+ */
+export async function dismissAlertOnResource(
+  entityId: string,
+  type: AlertableType,
+  resourceId: string,
+  alertId: string
+): Promise<Alert> {
+  const response = await api.post(
+    `/entities/${entityId}/${type}/${resourceId}/alerts/${alertId}/dismiss`
+  );
+  return response.data.data;
+}
+
 export const alertService = {
   getAlerts,
   getAlertStats,
   dismissAlert,
   bulkDismissAlerts,
+  dismissAlertOnResource,
 };

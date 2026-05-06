@@ -112,7 +112,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, computed } from 'vue';
+import { watch, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useEntityStore } from 'src/stores/entity';
 import { useMeterStore } from 'src/stores/meter';

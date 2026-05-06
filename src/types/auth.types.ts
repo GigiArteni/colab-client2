@@ -63,6 +63,26 @@ export interface Contact {
   phone?: string;
 }
 
+export interface InviteInfo {
+  token: string;
+  email: string;
+  status: string;
+  first_name?: string;
+  last_name?: string;
+  entity?: {
+    id: string;
+    name: string;
+    logo?: string | null;
+  };
+}
+
+export interface AcceptInviteRequest {
+  password: string;
+  password_confirmation: string;
+  first_name: string;
+  last_name: string;
+}
+
 // ==================== OTP Login (Passwordless) ====================
 
 export interface OtpChannel {

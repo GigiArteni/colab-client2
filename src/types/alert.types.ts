@@ -10,10 +10,10 @@ export interface Alert {
   alert_type?: AlertType;
   alertable_type: string;
   alertable_id: string;
-  alertable?: any;
+  alertable?: Record<string, unknown>;
   recipient_type: string;
   recipient_id: string;
-  recipient?: any;
+  recipient?: Record<string, unknown>;
   channel: 'email' | 'sms' | 'whatsapp' | 'print' | 'in_app';
   priority: 'low' | 'normal' | 'high' | 'urgent';
   subject: string;
@@ -24,8 +24,8 @@ export interface Alert {
   delivered_at?: string;
   dismissed_at?: string;
   dismissed_by?: string;
-  creator?: any;
-  dismisser?: any;
+  creator?: Record<string, unknown>;
+  dismisser?: Record<string, unknown>;
 }
 
 export interface AlertType {
@@ -58,3 +58,5 @@ export interface PaginatedAlerts {
     total: number;
   };
 }
+
+export type AlertableType = 'invoice' | 'usage' | 'meter';

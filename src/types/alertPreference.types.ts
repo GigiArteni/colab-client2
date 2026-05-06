@@ -4,6 +4,7 @@
  */
 
 import type { AlertType } from './alert.types';
+export type { AlertType };
 
 export interface AlertPreference {
   id?: string;

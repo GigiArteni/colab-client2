@@ -1,8 +1,8 @@
 <template>
   <q-page class="dashboard-page">
     <!-- Loading State -->
-    <div v-if="isLoading" class="flex flex-center" style="min-height: 50vh">
-      <q-spinner-dots size="40px" color="primary" />
+    <div v-if="isLoading" class="flex flex-center" style="min-height: 50vh" role="status" :aria-label="$t('common.loading')">
+      <q-spinner-dots size="40px" color="primary" aria-hidden="true" />
     </div>
 
     <!-- Content -->
@@ -71,8 +71,8 @@
         </template>
 
         <!-- Empty state -->
-        <div v-else class="empty-state">
-          <q-icon name="las la-clipboard-list" class="empty-state__icon" />
+        <div v-else class="empty-state" role="status">
+          <q-icon name="las la-clipboard-list" class="empty-state__icon" aria-hidden="true" />
           <div class="empty-state__title">{{ $t('dashboard.noSubscriptions') }}</div>
         </div>
       </div>

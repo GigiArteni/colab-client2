@@ -9,6 +9,7 @@ import type {
   Meter,
   UsageStatistics,
   FinancialStatistics,
+  SubscriptionCustomer,
   PaginatedResponse,
 } from 'src/types';
 
@@ -60,6 +61,16 @@ export const subscriptionService = {
   async getFinancialStatistics(entityId: string, subscriptionId: string): Promise<FinancialStatistics> {
     const response = await api.get<{ data: FinancialStatistics }>(
       `/entities/${entityId}/subscriptions/${subscriptionId}/statistics/financial`
+    );
+    return response.data.data;
+  },
+
+  /**
+   * Get customer billing identity for a subscription
+   */
+  async getCustomer(entityId: string, subscriptionId: string): Promise<SubscriptionCustomer> {
+    const response = await api.get<{ data: SubscriptionCustomer }>(
+      `/entities/${entityId}/subscriptions/${subscriptionId}/customer`
     );
     return response.data.data;
   },

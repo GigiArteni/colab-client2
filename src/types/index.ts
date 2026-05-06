@@ -12,3 +12,5 @@ export * from './usage.types';
 export * from './payment.types';
 export * from './alert.types';
 export * from './api.types';
+export * from './profile.types';
+export * from './notification.types';

@@ -157,7 +157,11 @@ export const useAlertsStore = defineStore('alerts', () => {
 
       // Rollback optimistic update
       if (alert) {
-        alert.dismissed_at = originalDismissedAt;
+        if (originalDismissedAt !== undefined) {
+          alert.dismissed_at = originalDismissedAt;
+        } else {
+          delete alert.dismissed_at;
+        }
       }
 
       return false;
@@ -223,7 +227,7 @@ export const useAlertsStore = defineStore('alerts', () => {
   function updateAlert(alertId: string, updates: Partial<Alert>): void {
     const index = alerts.value.findIndex(a => a.id === alertId);
     if (index !== -1) {
-      alerts.value[index] = { ...alerts.value[index], ...updates };
+      alerts.value[index] = { ...alerts.value[index], ...updates } as Alert;
     }
   }
 
@@ -261,7 +265,7 @@ export const useAlertsStore = defineStore('alerts', () => {
     channelName.value = `contact.${profileStore.contact.id}.alerts`;
 
     // Listen to alert.created - New alert for this contact
-    subscribe(channelName.value, '.alert.created', (data: any) => {
+    subscribe(channelName.value, '.alert.created', (data: unknown) => {
       console.log('[AlertsStore] Real-time alert created:', data);
 
       // Refetch to get full alert data (broadcast only sends minimal data)
@@ -278,27 +282,27 @@ export const useAlertsStore = defineStore('alerts', () => {
     });
 
     // Listen to alert.sent - Alert successfully sent
-    subscribe(channelName.value, '.alert.sent', (data: any) => {
+    subscribe(channelName.value, '.alert.sent', (data: unknown) => {
       console.log('[AlertsStore] Real-time alert sent:', data);
+      const payload = data as { alert_id: string; status: string; sent_at: string };
 
-      // Update status if alert is in list
-      const alert = alerts.value.find((a) => a.id === data.alert_id);
+      const alert = alerts.value.find((a) => a.id === payload.alert_id);
       if (alert) {
-        updateAlert(data.alert_id, {
-          status: data.status,
-          sent_at: data.sent_at,
+        updateAlert(payload.alert_id, {
+          status: payload.status as Alert['status'],
+          sent_at: payload.sent_at,
         });
       }
     });
 
     // Listen to alert.dismissed - Alert dismissed (possibly by another device/session)
-    subscribe(channelName.value, '.alert.dismissed', (data: any) => {
+    subscribe(channelName.value, '.alert.dismissed', (data: unknown) => {
       console.log('[AlertsStore] Real-time alert dismissed:', data);
+      const payload = data as { alert_id: string; dismissed_at: string; dismissed_by: string };
 
-      // Update dismissed status
-      updateAlert(data.alert_id, {
-        dismissed_at: data.dismissed_at,
-        dismissed_by: data.dismissed_by,
+      updateAlert(payload.alert_id, {
+        dismissed_at: payload.dismissed_at,
+        dismissed_by: payload.dismissed_by,
       });
     });
 

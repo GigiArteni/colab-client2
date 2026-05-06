@@ -40,6 +40,12 @@ export interface Meter {
   detachment_notes?: string;
   created_at: string;
   updated_at: string;
+  // BE shape aliases / computed fields used by some endpoints
+  meter_type?: MeterType;
+  last_reading?: number;
+  last_reading_value?: number;
+  unit?: string;
+  is_active?: boolean;
   // Relations
   subscription?: {
     id: string;
@@ -74,6 +80,11 @@ export interface MeterReading {
   created_at: string;
   updated_at: string;
   creator?: Contact;
+  // BE shape aliases used by some endpoints
+  status?: string;
+  source?: string;
+  reading?: number;
+  reading_date?: string;
 }
 
 export interface MeterReadingSubmission {

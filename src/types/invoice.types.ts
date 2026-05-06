@@ -97,6 +97,15 @@ export interface Subsidy {
 
 export type InvoiceStatus = 'draft' | 'pending' | 'validated' | 'sent' | 'partially_paid' | 'paid' | 'overdue' | 'cancelled' | 'refunded' | 'corrected';
 
+export interface InvoiceSummary {
+  total: number;
+  unpaid: number;
+  overdue: number;
+  paid: number;
+  total_balance_due: number;
+  currency?: string;
+}
+
 export interface InvoiceItem {
   id: string;
   invoice_id: string;
@@ -178,4 +187,58 @@ export interface InvoiceFilters {
   date_preset?: 'last_month' | 'last_3_months' | 'last_6_months' | 'last_year' | 'all';
   date_from?: string;
   date_to?: string;
+  page?: number;
+  per_page?: number;
+}
+
+export interface InvoiceCorrection {
+  id: string;
+  entity_id: string;
+  original_invoice_id: string;
+  correction_reason?: string;
+  number: string;
+  status: InvoiceStatus;
+  invoice_at: string;
+  grand_total: string | number;
+  total_payable: string | number;
+  currency: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface InvoiceStatusLog {
+  id: string;
+  invoice_id: string;
+  from_status?: InvoiceStatus | null;
+  to_status: InvoiceStatus;
+  changed_by?: string | null;
+  notes?: string | null;
+  created_at: string;
+  causer?: {
+    id: string;
+    name: string;
+    email?: string;
+  } | null;
+}
+
+export interface InvoiceActivity {
+  id: string;
+  object?: string;
+  entity_id: string;
+  type: string;
+  type_label: string;
+  title: string;
+  content?: string;
+  data?: Record<string, unknown>;
+  subject_type?: string;
+  subject_id?: string;
+  causer_type?: string;
+  causer_id?: string;
+  created_at: string;
+  causer?: {
+    id: string;
+    name: string;
+    email?: string;
+    avatar?: string;
+  } | null;
 }

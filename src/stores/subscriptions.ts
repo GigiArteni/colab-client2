@@ -28,7 +28,7 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
 
   // Computed
   const activeSubscriptions = computed(() =>
-    subscriptions.value.filter((s) => s.status === 'active')
+    subscriptions.value.filter((s) => s.status === 'active' || s.is_active)
   );
 
   const suspendedSubscriptions = computed(() =>
@@ -43,8 +43,10 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
     };
 
     subscriptions.value.forEach((sub) => {
-      if (grouped[sub.group]) {
-        grouped[sub.group].push(sub);
+      // UtilityGroup uses 'natural-gas'; SubscriptionGroup uses 'natural_gas'
+      const key = sub.group === 'natural-gas' ? 'natural_gas' : sub.group as SubscriptionGroup;
+      if (key in grouped) {
+        grouped[key].push(sub);
       }
     });
 
@@ -59,7 +61,10 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
     }
 
     if (groupFilter.value) {
-      result = result.filter((s) => s.group === groupFilter.value);
+      result = result.filter((s) => {
+        const key = s.group === 'natural-gas' ? 'natural_gas' : s.group;
+        return key === groupFilter.value;
+      });
     }
 
     return result;
@@ -68,7 +73,7 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
   const totalActive = computed(() => summary.value?.active || activeSubscriptions.value.length);
 
   // Actions
-  async function fetchSubscriptions(entityId: number): Promise<void> {
+  async function fetchSubscriptions(entityId: string): Promise<void> {
     isLoading.value = true;
     error.value = null;
 
@@ -82,13 +87,9 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
         params['filter[group]'] = groupFilter.value;
       }
 
-      const response = await subscriptionService.getSubscriptions(entityId, params);
+      const result = await subscriptionService.getSubscriptions(entityId, params);
 
-      subscriptions.value = response.data || [];
-
-      if (response.meta?.pagination) {
-        pagination.value = response.meta.pagination;
-      }
+      subscriptions.value = result || [];
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Eroare la încărcarea contractelor';
       throw err;
@@ -98,8 +99,8 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
   }
 
   async function fetchSubscription(
-    entityId: number,
-    subscriptionId: number
+    entityId: string,
+    subscriptionId: string
   ): Promise<void> {
     isLoading.value = true;
     error.value = null;
@@ -117,9 +118,20 @@ export const useSubscriptionsStore = defineStore('subscriptions', () => {
     }
   }
 
-  async function fetchSummary(entityId: number): Promise<void> {
+  function fetchSummary(entityId: string): void {
     try {
-      summary.value = await subscriptionService.getSummary(entityId);
+      // No dedicated summary endpoint; derive from loaded subscriptions
+      void entityId;
+      summary.value = {
+        total: subscriptions.value.length,
+        active: activeSubscriptions.value.length,
+        suspended: suspendedSubscriptions.value.length,
+        by_group: {
+          natural_gas: subscriptionsByGroup.value.natural_gas.length,
+          water: subscriptionsByGroup.value.water.length,
+          electricity: subscriptionsByGroup.value.electricity.length,
+        },
+      };
     } catch (err) {
       console.error('Failed to fetch subscription summary:', err);
       // Set default summary

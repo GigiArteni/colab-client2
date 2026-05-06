@@ -9,7 +9,7 @@
       :alerts="contextAlerts.alerts.value"
       :dismissible="true"
       :actionable="true"
-      action-label="Vezi detalii"
+      :action-label="$t('alertPreferences.viewDetails')"
       @dismiss="contextAlerts.dismissAlert"
       class="q-mb-md"
     />
@@ -57,6 +57,35 @@
             <div class="col-6 col-md-3" v-if="subscription.connection_date || subscription.activated_at">
               <div class="text-caption text-grey">{{ $t('subscriptions.startDate') }}</div>
               <div class="text-body1">{{ formatDate(subscription.connection_date || subscription.activated_at || '') }}</div>
+            </div>
+          </div>
+        </q-card-section>
+      </q-card>
+
+      <!-- Customer Info Card -->
+      <q-card v-if="customer" flat bordered class="q-mb-md">
+        <q-card-section>
+          <div class="text-subtitle2 text-grey q-mb-sm">{{ $t('subscriptions.customer') }}</div>
+          <div class="row q-col-gutter-md">
+            <div class="col-12 col-md-4">
+              <div class="text-caption text-grey">{{ $t('subscriptions.customerName') }}</div>
+              <div class="text-body1">{{ customer.billing_name || customer.name }}</div>
+            </div>
+            <div v-if="customer.email" class="col-12 col-md-4">
+              <div class="text-caption text-grey">{{ $t('subscriptions.customerEmail') }}</div>
+              <div class="text-body1">{{ customer.email }}</div>
+            </div>
+            <div v-if="customer.phone" class="col-12 col-md-4">
+              <div class="text-caption text-grey">{{ $t('subscriptions.customerPhone') }}</div>
+              <div class="text-body1">{{ customer.phone }}</div>
+            </div>
+            <div v-if="customer.tax_id" class="col-12 col-md-4">
+              <div class="text-caption text-grey">{{ $t('subscriptions.customerTaxId') }}</div>
+              <div class="text-body1">{{ customer.tax_id }}</div>
+            </div>
+            <div v-if="customer.address" class="col-12 col-md-8">
+              <div class="text-caption text-grey">{{ $t('subscriptions.customerAddress') }}</div>
+              <div class="text-body1">{{ customer.address }}</div>
             </div>
           </div>
         </q-card-section>
@@ -167,7 +196,7 @@ import { usageService } from 'src/services/usage.service';
 import { useContextAlerts } from 'src/composables/useContextAlerts';
 import UsageChart from 'src/components/UsageChart.vue';
 import AlertBanner from 'src/components/AlertBanner.vue';
-import type { Subscription, Meter, UsageRecord } from 'src/types';
+import type { Subscription, Meter, UsageRecord, SubscriptionCustomer } from 'src/types';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -184,6 +213,7 @@ const contextAlerts = useContextAlerts({
 
 const isLoading = ref(true);
 const subscription = ref<Subscription | null>(null);
+const customer = ref<SubscriptionCustomer | null>(null);
 const usages = ref<UsageRecord[]>([]);
 const meters = ref<Meter[]>([]);
 const activeTab = ref('usage');
@@ -208,16 +238,20 @@ async function loadData(): Promise<void> {
   try {
     const [sub, usageData, meterData] = await Promise.all([
       subscriptionService.getSubscription(entityStore.selectedEntityId, subscriptionId),
-      usageService.getUsages(entityStore.selectedEntityId, subscriptionId, { period: 'last_12_months' }),
+      usageService.getSubscriptionUsages(entityStore.selectedEntityId, subscriptionId, { period: 'last_12_months' }),
       subscriptionService.getMeters(entityStore.selectedEntityId, subscriptionId),
     ]);
 
     subscription.value = sub;
-    usages.value = usageData;
+    usages.value = usageData.data ?? [];
     meters.value = meterData;
 
-    // Load context alerts for this subscription
-    await contextAlerts.loadAlerts();
+    // Load customer info and context alerts in parallel
+    const [customerData] = await Promise.all([
+      subscriptionService.getCustomer(entityStore.selectedEntityId, subscriptionId).catch(() => null),
+      contextAlerts.loadAlerts(),
+    ]);
+    customer.value = customerData;
   } catch (error) {
     console.error('Failed to load subscription data:', error);
     subscription.value = null;

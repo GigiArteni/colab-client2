@@ -272,15 +272,16 @@ async function submitReading(): Promise<void> {
   if (form.current_index === null) return;
 
   try {
+    const readingPayload: { current_index: number; reading_date?: string; notes?: string } = {
+      current_index: form.current_index,
+    };
+    if (form.reading_date) readingPayload.reading_date = form.reading_date;
+    if (form.notes) readingPayload.notes = form.notes;
     await meterStore.submitReading(
       entityStore.selectedEntityId,
       meter.value.subscription_id,
       meterId.value,
-      {
-        current_index: form.current_index,
-        reading_date: form.reading_date,
-        notes: form.notes || undefined,
-      }
+      readingPayload
     );
 
     showSuccessDialog.value = true;

@@ -53,8 +53,9 @@ export const useNotificationsStore = defineStore('notifications', () => {
 
       notifications.value = response.data || [];
 
-      if (response.meta?.pagination) {
-        pagination.value = response.meta.pagination;
+      const paginated = response as unknown as { meta?: { pagination?: PaginationMeta } };
+      if (paginated.meta?.pagination) {
+        pagination.value = paginated.meta.pagination;
       }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Eroare la încărcarea notificărilor';
@@ -83,8 +84,9 @@ export const useNotificationsStore = defineStore('notifications', () => {
         notifications.value = [...notifications.value, ...response.data];
       }
 
-      if (response.meta?.pagination) {
-        pagination.value = response.meta.pagination;
+      const paginated2 = response as unknown as { meta?: { pagination?: PaginationMeta } };
+      if (paginated2.meta?.pagination) {
+        pagination.value = paginated2.meta.pagination;
       }
     } catch (err) {
       console.error('Failed to load more notifications:', err);

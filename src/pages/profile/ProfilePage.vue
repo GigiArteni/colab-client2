@@ -9,10 +9,10 @@
 
     <!-- Profile -->
     <template v-else>
-      <div class="row q-col-gutter-md">
+      <!-- User Info card (always visible) -->
+      <div class="row q-col-gutter-md q-mb-md">
         <div class="col-12 col-md-6">
-          <!-- User Info -->
-          <q-card class="q-mb-md">
+          <q-card>
             <q-card-section>
               <div class="row items-center q-gutter-md">
                 <q-avatar size="80px" color="primary" text-color="white">
@@ -48,10 +48,9 @@
                 </q-item-section>
               </q-item>
             </q-list>
-          </q-card>
 
-          <!-- Actions -->
-          <q-card>
+            <q-separator />
+
             <q-list>
               <q-item clickable v-ripple @click="changePassword">
                 <q-item-section avatar>
@@ -116,11 +115,40 @@
           </q-card>
         </div>
       </div>
+
+      <!-- Tabs: Settings / Contact preferences / Devices -->
+      <q-tabs
+        v-model="activeTab"
+        dense
+        align="left"
+        class="q-mb-md"
+        indicator-color="primary"
+        active-color="primary"
+      >
+        <q-tab name="settings" icon="las la-sliders-h" :label="$t('profile.tabs.settings')" />
+        <q-tab name="contact" icon="las la-address-card" :label="$t('profile.tabs.contact')" />
+        <q-tab name="devices" icon="las la-mobile-alt" :label="$t('profile.tabs.devices')" />
+      </q-tabs>
+
+      <q-tab-panels v-model="activeTab" animated>
+        <q-tab-panel name="settings" class="q-pa-none">
+          <ProfileSettingsTab />
+        </q-tab-panel>
+
+        <q-tab-panel name="contact" class="q-pa-none">
+          <ContactSettingsSection />
+        </q-tab-panel>
+
+        <q-tab-panel name="devices" class="q-pa-none">
+          <RegisteredDevicesSection />
+        </q-tab-panel>
+      </q-tab-panels>
     </template>
   </q-page>
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useQuasar } from 'quasar';
 import { useI18n } from 'vue-i18n';
@@ -128,6 +156,9 @@ import { useAuthStore } from 'src/stores/auth';
 import { useProfileStore } from 'src/stores/profile';
 import { useEntityStore } from 'src/stores/entity';
 import { clearAppData } from 'src/boot/appInit';
+import ProfileSettingsTab from 'src/components/profile/ProfileSettingsTab.vue';
+import ContactSettingsSection from 'src/components/profile/ContactSettingsSection.vue';
+import RegisteredDevicesSection from 'src/components/profile/RegisteredDevicesSection.vue';
 
 const { t } = useI18n();
 const $q = useQuasar();
@@ -135,6 +166,8 @@ const router = useRouter();
 const authStore = useAuthStore();
 const profileStore = useProfileStore();
 const entityStore = useEntityStore();
+
+const activeTab = ref('settings');
 
 function changePassword(): void {
   $q.notify({

@@ -12,6 +12,7 @@
             :options="statusOptions"
             rounded
             unelevated
+            :aria-label="$t('invoices.filterByStatus')"
           />
           <q-space />
           <q-select
@@ -30,8 +31,8 @@
     </q-card>
 
     <!-- Loading -->
-    <div v-if="isLoading" class="flex flex-center q-pa-xl">
-      <q-spinner-dots size="50px" color="primary" />
+    <div v-if="isLoading" class="flex flex-center q-pa-xl" role="status" :aria-label="$t('common.loading')">
+      <q-spinner-dots size="50px" color="primary" aria-hidden="true" />
     </div>
 
     <!-- Invoice List -->

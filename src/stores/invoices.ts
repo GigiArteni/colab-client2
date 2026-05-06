@@ -9,7 +9,10 @@ import type {
   Invoice,
   InvoiceStatus,
   InvoiceSummary,
-  InvoiceListParams,
+  InvoiceFilters,
+  InvoiceCorrection,
+  InvoiceStatusLog,
+  InvoiceActivity,
   PaginationMeta,
 } from 'src/types';
 
@@ -37,7 +40,7 @@ export const useInvoicesStore = defineStore('invoices', () => {
   );
 
   const totalUnpaid = computed(() =>
-    unpaidInvoices.value.reduce((sum, inv) => sum + inv.balance_due, 0)
+    unpaidInvoices.value.reduce((sum, inv) => sum + Number(inv.total_payable ?? 0), 0)
   );
 
   const hasMore = computed(() => {
@@ -47,8 +50,8 @@ export const useInvoicesStore = defineStore('invoices', () => {
 
   // Actions
   async function fetchInvoices(
-    entityId: number,
-    params?: InvoiceListParams,
+    entityId: string,
+    params?: InvoiceFilters,
     append = false
   ): Promise<void> {
     if (append) {
@@ -59,13 +62,12 @@ export const useInvoicesStore = defineStore('invoices', () => {
     error.value = null;
 
     try {
-      const queryParams: InvoiceListParams = {
-        sort: sortBy.value,
+      const queryParams: InvoiceFilters = {
         ...params,
       };
 
       if (statusFilter.value) {
-        queryParams['filter[status]'] = statusFilter.value;
+        queryParams.status = statusFilter.value;
       }
 
       const response = await invoiceService.getInvoices(entityId, queryParams);
@@ -76,8 +78,8 @@ export const useInvoicesStore = defineStore('invoices', () => {
         invoices.value = response.data || [];
       }
 
-      if (response.meta?.pagination) {
-        pagination.value = response.meta.pagination;
+      if (response.meta) {
+        pagination.value = response.meta;
       }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Eroare la încărcarea facturilor';
@@ -89,19 +91,14 @@ export const useInvoicesStore = defineStore('invoices', () => {
   }
 
   async function fetchInvoice(
-    entityId: number,
-    subscriptionId: number,
-    invoiceId: number
+    entityId: string,
+    invoiceId: string
   ): Promise<Invoice> {
     isLoading.value = true;
     error.value = null;
 
     try {
-      const invoice = await invoiceService.getInvoice(
-        entityId,
-        subscriptionId,
-        invoiceId
-      );
+      const invoice = await invoiceService.getInvoice(entityId, invoiceId);
       currentInvoice.value = invoice;
       return invoice;
     } catch (err) {
@@ -112,18 +109,26 @@ export const useInvoicesStore = defineStore('invoices', () => {
     }
   }
 
-  async function fetchSummary(entityId: number): Promise<InvoiceSummary> {
+  async function fetchSummary(entityId: string): Promise<InvoiceSummary | null> {
     try {
-      const summaryData = await invoiceService.getInvoiceSummary(entityId);
-      summary.value = summaryData;
-      return summaryData;
+      // invoiceService does not expose a summary endpoint; use status counts as fallback
+      const counts = await invoiceService.getStatusCounts(entityId);
+      const fallback: InvoiceSummary = {
+        total: counts.total ?? 0,
+        unpaid: (counts.draft ?? 0) + (counts.sent ?? 0) + (counts.overdue ?? 0),
+        overdue: counts.overdue ?? 0,
+        paid: counts.paid ?? 0,
+        total_balance_due: 0,
+      };
+      summary.value = fallback;
+      return fallback;
     } catch (err) {
       console.error('Failed to fetch invoice summary:', err);
-      throw err;
+      return null;
     }
   }
 
-  async function loadMore(entityId: number): Promise<void> {
+  async function loadMore(entityId: string): Promise<void> {
     if (!hasMore.value || isLoadingMore.value) return;
 
     const nextPage = (pagination.value?.current_page || 0) + 1;
@@ -131,13 +136,12 @@ export const useInvoicesStore = defineStore('invoices', () => {
   }
 
   async function downloadPdf(
-    entityId: number,
-    subscriptionId: number,
-    invoiceId: number,
+    entityId: string,
+    invoiceId: string,
     invoiceNumber: string
   ): Promise<void> {
     try {
-      const blob = await invoiceService.downloadPdf(entityId, subscriptionId, invoiceId);
+      const blob = await invoiceService.downloadPdf(entityId, invoiceId);
 
       // Create download link
       const url = window.URL.createObjectURL(blob);
@@ -175,6 +179,61 @@ export const useInvoicesStore = defineStore('invoices', () => {
     statusFilter.value = null;
   }
 
+  // Invoice history state
+  const corrections = ref<InvoiceCorrection[]>([]);
+  const statusLogs = ref<InvoiceStatusLog[]>([]);
+  const activities = ref<InvoiceActivity[]>([]);
+  const activitiesPagination = ref<{ page: number; lastPage: number; total: number }>({
+    page: 1,
+    lastPage: 1,
+    total: 0,
+  });
+  const isLoadingHistory = ref(false);
+
+  async function fetchInvoiceHistory(entityId: string, invoiceId: string): Promise<void> {
+    isLoadingHistory.value = true;
+    try {
+      const [corrs, logs, acts] = await Promise.all([
+        invoiceService.getCorrections(entityId, invoiceId),
+        invoiceService.getStatusLogs(entityId, invoiceId),
+        invoiceService.getActivities(entityId, invoiceId, { per_page: 20 }),
+      ]);
+      corrections.value = corrs;
+      statusLogs.value = logs;
+      activities.value = acts.data;
+      activitiesPagination.value = {
+        page: acts.meta.current_page,
+        lastPage: acts.meta.last_page,
+        total: acts.meta.total,
+      };
+    } finally {
+      isLoadingHistory.value = false;
+    }
+  }
+
+  async function fetchMoreActivities(entityId: string, invoiceId: string): Promise<void> {
+    const nextPage = activitiesPagination.value.page + 1;
+    if (nextPage > activitiesPagination.value.lastPage) return;
+
+    const response = await invoiceService.getActivities(entityId, invoiceId, {
+      page: nextPage,
+      per_page: 20,
+    });
+    activities.value = [...activities.value, ...response.data];
+    activitiesPagination.value = {
+      page: response.meta.current_page,
+      lastPage: response.meta.last_page,
+      total: response.meta.total,
+    };
+  }
+
+  function clearInvoiceHistory(): void {
+    corrections.value = [];
+    statusLogs.value = [];
+    activities.value = [];
+    activitiesPagination.value = { page: 1, lastPage: 1, total: 0 };
+  }
+
   return {
     // State
     invoices,
@@ -203,5 +262,15 @@ export const useInvoicesStore = defineStore('invoices', () => {
     setSortBy,
     clearCurrentInvoice,
     reset,
+
+    // Invoice history
+    corrections,
+    statusLogs,
+    activities,
+    activitiesPagination,
+    isLoadingHistory,
+    fetchInvoiceHistory,
+    fetchMoreActivities,
+    clearInvoiceHistory,
   };
 });

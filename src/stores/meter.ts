@@ -13,7 +13,6 @@ import type {
   MeterReadingSubmission,
   MeterStatusCounts,
   MeterFilters,
-  PaginatedResponse,
 } from 'src/types';
 
 export const useMeterStore = defineStore('meter', () => {

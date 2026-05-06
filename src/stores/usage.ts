@@ -1,22 +1,23 @@
 /**
- * Usage Store - Manages consumption/usage state
+ * Usage Store - Manages consumption/usage state.
+ *
+ * IDs are strings throughout (matches BE convention + types).
  */
 
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import { usageService } from 'src/services/usage.service';
+import { usageService, type SubmitReadingPayload } from 'src/services/usage.service';
 import type {
-  Usage,
+  UsageRecord,
   Meter,
   MeterReading,
   UsageStatistics,
-  SubmitReadingPayload,
   PaginationMeta,
 } from 'src/types';
 
 export const useUsageStore = defineStore('usage', () => {
   // State
-  const usages = ref<Usage[]>([]);
+  const usages = ref<UsageRecord[]>([]);
   const meters = ref<Meter[]>([]);
   const readings = ref<MeterReading[]>([]);
   const statistics = ref<UsageStatistics | null>(null);
@@ -26,23 +27,21 @@ export const useUsageStore = defineStore('usage', () => {
   const error = ref<string | null>(null);
 
   // Selected meter for filtering
-  const selectedMeterId = ref<number | null>(null);
+  const selectedMeterId = ref<string | null>(null);
 
   // Computed
-  const currentMonthUsage = computed(() => statistics.value?.current_month || 0);
+  const currentMonthUsage = computed(() => statistics.value?.current_month ?? 0);
+  const previousMonthUsage = computed(() => statistics.value?.previous_month ?? 0);
+  const usageChangePercent = computed(() => statistics.value?.change_percent ?? 0);
+  const usageTrend = computed(() => statistics.value?.trend ?? 'stable');
+  const usageUnit = computed(() => statistics.value?.unit ?? 'm³');
 
-  const previousMonthUsage = computed(() => statistics.value?.previous_month || 0);
+  const activeMeters = computed(() =>
+    meters.value.filter((m) => (m as { is_active?: boolean }).is_active !== false),
+  );
 
-  const usageChangePercent = computed(() => statistics.value?.change_percent || 0);
-
-  const usageTrend = computed(() => statistics.value?.trend || 'stable');
-
-  const usageUnit = computed(() => statistics.value?.unit || 'm³');
-
-  const activeMeters = computed(() => meters.value.filter((m) => m.is_active));
-
-  const selectedMeter = computed(() =>
-    meters.value.find((m) => m.id === selectedMeterId.value) || null
+  const selectedMeter = computed(
+    () => meters.value.find((m) => m.id === selectedMeterId.value) ?? null,
   );
 
   const filteredUsages = computed(() => {
@@ -50,14 +49,20 @@ export const useUsageStore = defineStore('usage', () => {
     return usages.value.filter((u) => u.meter_id === selectedMeterId.value);
   });
 
-  // Chart data for last 12 months
+  // Chart data for last 12 months — falls back gracefully when consumption/date missing
   const chartData = computed(() => {
     const sortedUsages = [...usages.value]
-      .sort((a, b) => new Date(a.period_end).getTime() - new Date(b.period_end).getTime())
+      .filter((u): u is UsageRecord & { reading_end_date: string; consumption: number } =>
+        Boolean(u.reading_end_date) && typeof u.consumption === 'number',
+      )
+      .sort(
+        (a, b) =>
+          new Date(a.reading_end_date).getTime() - new Date(b.reading_end_date).getTime(),
+      )
       .slice(-12);
 
     const labels = sortedUsages.map((u) => {
-      const date = new Date(u.period_end);
+      const date = new Date(u.reading_end_date);
       return date.toLocaleDateString('ro-RO', { month: 'short', year: '2-digit' });
     });
 
@@ -67,25 +72,19 @@ export const useUsageStore = defineStore('usage', () => {
   });
 
   // Actions
-  async function fetchUsages(
-    entityId: number,
-    subscriptionId?: number
-  ): Promise<void> {
+  async function fetchUsages(entityId: string, subscriptionId?: string): Promise<void> {
     isLoading.value = true;
     error.value = null;
 
     try {
-      let response;
-      if (subscriptionId) {
-        response = await usageService.getSubscriptionUsages(entityId, subscriptionId);
-      } else {
-        response = await usageService.getUsages(entityId);
-      }
+      const response = subscriptionId
+        ? await usageService.getSubscriptionUsages(entityId, subscriptionId)
+        : await usageService.getUsages(entityId);
 
-      usages.value = response.data || [];
+      usages.value = response.data ?? [];
 
-      if (response.meta?.pagination) {
-        pagination.value = response.meta.pagination;
+      if (response.meta) {
+        pagination.value = response.meta;
       }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Eroare la încărcarea consumului';
@@ -95,14 +94,10 @@ export const useUsageStore = defineStore('usage', () => {
     }
   }
 
-  async function fetchMeters(
-    entityId: number,
-    subscriptionId: number
-  ): Promise<void> {
+  async function fetchMeters(entityId: string, subscriptionId: string): Promise<void> {
     try {
       meters.value = await usageService.getMeters(entityId, subscriptionId);
 
-      // Auto-select first meter if none selected
       const firstMeter = meters.value[0];
       if (!selectedMeterId.value && firstMeter) {
         selectedMeterId.value = firstMeter.id;
@@ -113,31 +108,23 @@ export const useUsageStore = defineStore('usage', () => {
   }
 
   async function fetchMeterReadings(
-    entityId: number,
-    subscriptionId: number,
-    meterId: number
+    entityId: string,
+    subscriptionId: string,
+    meterId: string,
   ): Promise<void> {
     try {
-      const response = await usageService.getMeterReadings(
-        entityId,
-        subscriptionId,
-        meterId
-      );
-      readings.value = response.data || [];
+      const response = await usageService.getMeterReadings(entityId, subscriptionId, meterId);
+      readings.value = response.data ?? [];
     } catch (err) {
       console.error('Failed to fetch meter readings:', err);
     }
   }
 
-  async function fetchStatistics(
-    entityId: number,
-    subscriptionId: number
-  ): Promise<void> {
+  async function fetchStatistics(entityId: string, subscriptionId: string): Promise<void> {
     try {
       statistics.value = await usageService.getStatistics(entityId, subscriptionId);
     } catch (err) {
       console.error('Failed to fetch statistics:', err);
-      // Set default statistics if API fails
       statistics.value = {
         current_month: 0,
         previous_month: 0,
@@ -152,9 +139,9 @@ export const useUsageStore = defineStore('usage', () => {
   }
 
   async function submitReading(
-    entityId: number,
-    subscriptionId: number,
-    data: SubmitReadingPayload
+    entityId: string,
+    subscriptionId: string,
+    data: SubmitReadingPayload,
   ): Promise<MeterReading> {
     isSubmitting.value = true;
     error.value = null;
@@ -162,14 +149,15 @@ export const useUsageStore = defineStore('usage', () => {
     try {
       const reading = await usageService.submitReading(entityId, subscriptionId, data);
 
-      // Add to readings list
       readings.value.unshift(reading);
 
-      // Update meter's last reading
       const meter = meters.value.find((m) => m.id === data.meter_id);
       if (meter) {
-        meter.last_reading = data.reading;
-        meter.last_reading_date = reading.reading_date;
+        meter.last_reading = data.current_index;
+        const newDate = reading.reading_date ?? reading.reading_end_date;
+        if (newDate !== undefined) {
+          meter.last_reading_date = newDate;
+        }
       }
 
       return reading;
@@ -181,7 +169,7 @@ export const useUsageStore = defineStore('usage', () => {
     }
   }
 
-  function selectMeter(meterId: number | null): void {
+  function selectMeter(meterId: string | null): void {
     selectedMeterId.value = meterId;
   }
 

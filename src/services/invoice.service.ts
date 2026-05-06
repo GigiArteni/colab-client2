@@ -11,6 +11,9 @@ import type {
   InvoiceStatusCounts,
   InvoiceStatistics,
   InvoiceFilters,
+  InvoiceCorrection,
+  InvoiceStatusLog,
+  InvoiceActivity,
   PaginatedResponse,
   PaginationMeta,
 } from 'src/types';
@@ -104,6 +107,45 @@ export const invoiceService = {
       `/entities/${entityId}/invoices/statistics`
     );
     return response.data.data;
+  },
+
+  /**
+   * Get corrections (credit notes) for an invoice
+   */
+  async getCorrections(entityId: string, invoiceId: string): Promise<InvoiceCorrection[]> {
+    const response = await api.get<PaginatedResponse<InvoiceCorrection>>(
+      `/entities/${entityId}/invoices/${invoiceId}/corrections`
+    );
+    return response.data.data;
+  },
+
+  /**
+   * Get status change log for an invoice
+   */
+  async getStatusLogs(entityId: string, invoiceId: string): Promise<InvoiceStatusLog[]> {
+    const response = await api.get<PaginatedResponse<InvoiceStatusLog>>(
+      `/entities/${entityId}/invoices/${invoiceId}/status-logs`
+    );
+    return response.data.data;
+  },
+
+  /**
+   * Get activity feed (comments + changes) for an invoice
+   */
+  async getActivities(
+    entityId: string,
+    invoiceId: string,
+    params?: { page?: number; per_page?: number }
+  ): Promise<PaginatedResponse<InvoiceActivity>> {
+    const queryParams: Record<string, unknown> = { include: 'causer' };
+    if (params?.page) queryParams['page'] = params.page;
+    if (params?.per_page) queryParams['per_page'] = params.per_page;
+
+    const response = await api.get<PaginatedResponse<InvoiceActivity>>(
+      `/entities/${entityId}/invoices/${invoiceId}/activities`,
+      { params: queryParams }
+    );
+    return response.data;
   },
 
   /**

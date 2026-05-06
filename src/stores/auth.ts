@@ -14,6 +14,8 @@ import type {
   MfaChallengeResponse,
   OtpChannel,
   OtpRequestResponse,
+  InviteInfo,
+  AcceptInviteRequest,
 } from 'src/types';
 
 export const useAuthStore = defineStore('auth', () => {
@@ -241,6 +243,56 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null;
   }
 
+  // ==================== INVITE ====================
+
+  /**
+   * Get invite details by token
+   */
+  async function getInvite(token: string): Promise<InviteInfo | null> {
+    isLoading.value = true;
+    error.value = null;
+    try {
+      return await authService.getInvite(token);
+    } catch (err) {
+      error.value = getErrorMessage(err);
+      return null;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /**
+   * Accept invite and create account
+   */
+  async function acceptInvite(token: string, data: AcceptInviteRequest): Promise<boolean> {
+    isLoading.value = true;
+    error.value = null;
+    try {
+      return await authService.acceptInvite(token, data);
+    } catch (err) {
+      error.value = getErrorMessage(err);
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /**
+   * Refresh access token using stored refresh token
+   * Returns new access token string or null on failure
+   */
+  async function refreshAccessToken(): Promise<string | null> {
+    if (!refreshToken.value) return null;
+    try {
+      const response = await authService.refreshToken(refreshToken.value);
+      setTokens(response.access_token, response.refresh_token);
+      return response.access_token;
+    } catch {
+      clearTokens();
+      return null;
+    }
+  }
+
   /**
    * Reset OTP state
    */
@@ -346,12 +398,17 @@ export const useAuthStore = defineStore('auth', () => {
     cancelMfa,
     logout,
     setTokens,
+    refreshAccessToken,
     $reset,
 
     // OTP Login Actions
     checkAuthMethod,
     requestOtp,
     verifyOtp,
+
+    // Invite Actions
+    getInvite,
+    acceptInvite,
     cancelOtp,
     otpGoBack,
   };

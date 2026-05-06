@@ -4,7 +4,7 @@
     <q-header class="app-header">
       <q-toolbar class="app-toolbar">
         <!-- Entity Branding -->
-        <div class="app-brand" @click="goToDashboard">
+        <div class="app-brand" role="button" tabindex="0" :aria-label="$t('nav.dashboardShort')" @click="goToDashboard" @keyup.enter="goToDashboard" @keyup.space.prevent="goToDashboard">
           <template v-if="entityStore.selectedEntity?.logo?.url">
             <img :src="entityStore.selectedEntity.logo.url" class="app-brand__logo" />
           </template>
@@ -26,8 +26,8 @@
           v-if="entityStore.hasMultipleEntities"
           flat
           round
-          dense
           class="app-header-btn q-mr-xs"
+          :aria-label="$t('common.selectEntity')"
           @click="showEntitySwitcher = true"
         >
           <q-icon name="las la-exchange-alt" size="20px" />
@@ -35,7 +35,7 @@
         </q-btn>
 
         <!-- User Avatar -->
-        <q-btn flat round dense class="app-header-btn" @click="showUserMenu = true">
+        <q-btn flat round class="app-header-btn" :aria-label="$t('nav.profile')" @click="showUserMenu = true">
           <q-avatar size="32px" class="app-avatar">
             {{ profileStore.initials }}
           </q-avatar>
@@ -45,29 +45,34 @@
 
     <!-- Page Container -->
     <q-page-container class="app-page-container">
+      <a href="#main-content" class="skip-link">{{ $t('common.skipToContent') }}</a>
+
       <!-- Notification Permission Banner -->
       <div class="notification-banner-wrapper">
         <NotificationPermissionBanner />
       </div>
 
-      <router-view v-slot="{ Component }">
-        <transition name="fade" mode="out-in">
-          <component :is="Component" />
-        </transition>
-      </router-view>
+      <main id="main-content">
+        <router-view v-slot="{ Component }">
+          <transition name="fade" mode="out-in">
+            <component :is="Component" />
+          </transition>
+        </router-view>
+      </main>
     </q-page-container>
 
     <!-- Bottom Navigation -->
     <q-footer class="app-footer">
-      <nav class="app-nav">
+      <nav class="app-nav" :aria-label="$t('nav.mainNavLabel')">
         <router-link
           v-for="item in navItems"
           :key="item.to"
           :to="item.to"
           class="app-nav__item"
           :class="{ 'app-nav__item--active': isActiveRoute(item.to) }"
+          :aria-current="isActiveRoute(item.to) ? 'page' : undefined"
         >
-          <div class="app-nav__icon">
+          <div class="app-nav__icon" aria-hidden="true">
             <q-icon :name="item.icon" size="24px" />
           </div>
           <span class="app-nav__label">{{ $t(item.labelShort) }}</span>
@@ -80,7 +85,7 @@
       <q-card class="entity-switcher-card">
         <q-card-section class="entity-switcher-header">
           <div class="text-h6">{{ $t('common.selectEntity') }}</div>
-          <q-btn flat round dense icon="las la-times" v-close-popup />
+          <q-btn flat round icon="las la-times" :aria-label="$t('common.close')" v-close-popup />
         </q-card-section>
         <q-card-section class="q-pt-none">
           <q-list class="entity-list">
@@ -225,6 +230,23 @@ async function handleLogout(): Promise<void> {
 </script>
 
 <style lang="sass" scoped>
+// Skip link
+.skip-link
+  position: absolute
+  top: -100%
+  left: var(--space-md)
+  z-index: 9999
+  padding: var(--space-sm) var(--space-md)
+  background: var(--color-primary)
+  color: white
+  border-radius: var(--radius-md)
+  font-weight: 600
+  text-decoration: none
+  transition: top 0.1s
+
+  &:focus
+    top: var(--space-sm)
+
 // Header
 .app-header
   background: var(--color-surface)
@@ -241,6 +263,11 @@ async function handleLogout(): Promise<void> {
   gap: var(--space-sm)
   cursor: pointer
   user-select: none
+
+  &:focus-visible
+    outline: 2px solid var(--color-primary)
+    outline-offset: 2px
+    border-radius: var(--radius-sm)
 
 .app-brand__logo
   width: 32px

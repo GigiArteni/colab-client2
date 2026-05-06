@@ -19,6 +19,7 @@ export interface Subscription {
   supplier_id?: string;
   pcs_location_id?: string;
   is_active: boolean;
+  status?: SubscriptionStatus;
   has_new_supplier?: boolean;
   has_vat_inclusive?: boolean;
   has_excise?: boolean;
@@ -84,13 +85,25 @@ export interface Usage {
   consumption?: number;
   unit?: string;
   created_at?: string;
+  // BE shape aliases used by some endpoints
+  period_start?: string;
+  period_end?: string;
+  reading_start?: number;
+  reading_end?: number;
+  is_estimated?: boolean;
 }
 
 export interface UsageStatistics {
-  total_consumption: number;
+  current_month: number;
+  previous_month: number;
+  same_month_last_year: number | null;
   average_monthly: number;
-  last_12_months: MonthlyUsage[];
+  total_year: number;
   unit: string;
+  change_percent: number;
+  trend: 'up' | 'down' | 'stable';
+  total_consumption?: number;
+  last_12_months?: MonthlyUsage[];
 }
 
 export interface MonthlyUsage {
@@ -104,4 +117,27 @@ export interface FinancialStatistics {
   total_paid: number;
   balance_due: number;
   currency: string;
+}
+
+export type SubscriptionStatus = 'active' | 'suspended' | 'terminated' | 'pending';
+
+export type SubscriptionGroup = 'natural_gas' | 'water' | 'electricity';
+
+export interface SubscriptionSummary {
+  total: number;
+  active: number;
+  suspended: number;
+  by_group: Record<SubscriptionGroup, number>;
+}
+
+export interface SubscriptionCustomer {
+  id: string;
+  type: 'Contact' | 'Entity';
+  name: string;
+  billing_name?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  tax_id?: string;
+  reg_no?: string;
 }
