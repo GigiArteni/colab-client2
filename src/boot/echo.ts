@@ -13,7 +13,7 @@ import { watch } from 'vue';
 declare global {
   interface Window {
     Pusher: typeof Pusher;
-    Echo: Echo | null;
+    Echo: Echo<'pusher'> | null;
   }
 }
 
@@ -22,8 +22,8 @@ window.Pusher = Pusher;
 /**
  * Create Echo instance with authentication
  */
-function createEchoInstance(accessToken: string): Echo {
-  return new Echo({
+function createEchoInstance(accessToken: string): Echo<'pusher'> {
+  return new Echo<'pusher'>({
     broadcaster: 'pusher',
     key: process.env.APP_PUSHER_APP_KEY || '',
     wsHost: process.env.APP_PUSHER_HOST || 'localhost',

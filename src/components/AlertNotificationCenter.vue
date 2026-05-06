@@ -4,19 +4,19 @@
     <q-btn
       flat
       round
-      dense
       class="alert-bell-btn"
+      :aria-label="$t('notifications.bellLabel', { count: alertsStore.unreadCount })"
       @click="showDrawer = true"
     >
-      <q-icon name="las la-bell" size="20px" />
+      <q-icon name="las la-bell" size="20px" aria-hidden="true" />
       <q-badge
         v-if="alertsStore.unreadCount > 0"
         color="negative"
         floating
         :label="alertsStore.unreadCount > 99 ? '99+' : alertsStore.unreadCount"
         class="alert-badge"
+        aria-hidden="true"
       />
-      <q-tooltip>Notificări ({{ alertsStore.unreadCount }})</q-tooltip>
     </q-btn>
 
     <!-- Bottom Drawer for Mobile -->
@@ -39,17 +39,15 @@
             <q-btn
               flat
               round
-              dense
               icon="las la-cog"
+              :aria-label="$t('notifications.preferences')"
               @click="goToPreferences"
-            >
-              <q-tooltip>Preferințe</q-tooltip>
-            </q-btn>
+            />
             <q-btn
               flat
               round
-              dense
               icon="las la-times"
+              :aria-label="$t('common.close')"
               @click="showDrawer = false"
             />
           </div>
@@ -66,7 +64,7 @@
             :outline="selectedFilter !== filter.value"
             :color="selectedFilter === filter.value ? 'primary' : 'grey-3'"
             :text-color="selectedFilter === filter.value ? 'white' : 'grey-8'"
-            @click="selectedFilter = filter.value; reloadAlerts()"
+            @click="selectedFilter = filter.value as 'all' | 'unread'; reloadAlerts()"
             class="q-mr-xs"
           >
             {{ filter.label }}
@@ -76,7 +74,7 @@
         <q-separator />
 
         <!-- Alert List -->
-        <q-card-section class="alert-drawer__content">
+        <q-card-section class="alert-drawer__content" aria-live="polite" aria-atomic="false">
           <q-pull-to-refresh @refresh="onRefresh">
             <!-- Loading State -->
             <div v-if="alertsStore.isLoading && alerts.length === 0" class="alert-empty">
@@ -125,15 +123,13 @@
                     v-if="!alert.dismissed_at"
                     flat
                     round
-                    dense
                     icon="las la-check"
                     size="sm"
                     color="primary"
+                    :aria-label="$t('notifications.markRead')"
                     :loading="alertsStore.dismissing.has(alert.id)"
                     @click.stop="handleDismiss(alert.id)"
-                  >
-                    <q-tooltip>Marchează ca citită</q-tooltip>
-                  </q-btn>
+                  />
                   <q-icon v-else name="las la-check-circle" size="20px" color="positive" />
                 </q-item-section>
               </q-item>
@@ -144,7 +140,7 @@
                   <q-btn
                     flat
                     color="primary"
-                    label="Încarcă mai multe"
+                    :label="$t('notifications.loadMore')"
                     icon="las la-angle-down"
                     :loading="alertsStore.isLoading"
                     @click="loadMore"
@@ -161,7 +157,7 @@
           <q-btn
             flat
             color="primary"
-            label="Marchează tot ca citit"
+            :label="$t('notifications.markAllRead')"
             icon="las la-check-double"
             @click="handleDismissAll"
             class="full-width"
@@ -181,17 +177,18 @@
           </div>
         </q-card-section>
 
+        <!-- eslint-disable-next-line vue/no-v-text-v-html-on-component -->
         <q-card-section v-if="selectedAlert" v-html="selectedAlert.content_rendered" class="alert-details__content">
         </q-card-section>
 
         <q-separator />
 
         <q-card-actions align="right">
-          <q-btn flat label="Închide" color="grey-7" v-close-popup />
+          <q-btn flat :label="$t('notifications.close')" color="grey-7" v-close-popup />
           <q-btn
             v-if="selectedAlert && !selectedAlert.dismissed_at"
             flat
-            label="Marchează ca citită"
+            :label="$t('notifications.markRead')"
             color="primary"
             icon="las la-check"
             :loading="alertsStore.dismissing.has(selectedAlert.id)"
@@ -241,13 +238,15 @@ function goToPreferences(): void {
 }
 
 async function reloadAlerts(): Promise<void> {
-  const dismissed = selectedFilter.value === 'all' ? undefined : false;
-  await alertsStore.fetchAlerts({ dismissed });
+  const params: { dismissed?: boolean } = {};
+  if (selectedFilter.value !== 'all') params.dismissed = false;
+  await alertsStore.fetchAlerts(params);
 }
 
 async function loadMore(): Promise<void> {
-  const dismissed = selectedFilter.value === 'all' ? undefined : false;
-  await alertsStore.loadMore({ dismissed });
+  const params: { dismissed?: boolean } = {};
+  if (selectedFilter.value !== 'all') params.dismissed = false;
+  await alertsStore.loadMore(params);
 }
 
 async function onRefresh(done: () => void): Promise<void> {
@@ -288,7 +287,7 @@ async function handleDismiss(alertId: string): Promise<void> {
   }
 }
 
-async function handleDismissAll(): Promise<void> {
+function handleDismissAll(): void {
   $q.dialog({
     title: 'Marchează tot ca citit',
     message: `Sigur doriți să marcați toate cele ${alertsStore.unreadCount} notificări ca citite?`,
@@ -302,6 +301,7 @@ async function handleDismissAll(): Promise<void> {
       color: 'primary',
       unelevated: true,
     },
+  // eslint-disable-next-line @typescript-eslint/no-misused-promises
   }).onOk(async () => {
     await alertsStore.dismissAllUnread();
 

@@ -22,6 +22,7 @@ export default {
     selectEntity: 'Select Company',
     loadMore: 'Load More',
     by: 'by',
+    skipToContent: 'Skip to main content',
   },
 
   // Navigation
@@ -37,6 +38,7 @@ export default {
     subscriptionsShort: 'Contracts',
     profile: 'Profile',
     profileShort: 'Profile',
+    mainNavLabel: 'Main navigation',
   },
 
   // Auth
@@ -51,6 +53,7 @@ export default {
     enterPassword: 'Enter your password to continue',
     forgotPassword: 'Forgot password?',
     continue: 'Continue',
+    changeIdentifier: 'Change',
     resetPassword: {
       title: 'Reset Password',
       subtitle: 'Enter your new password',
@@ -82,6 +85,7 @@ export default {
       challengeError: 'Failed to send code. Please try again.',
       resendError: 'Failed to resend code. Please try again.',
     },
+    stepOf: 'Step {current} of {total}',
     otp: {
       enterIdentifier: 'Sign in to your account',
       identifierHint: 'Enter your email or phone number to continue',
@@ -149,6 +153,7 @@ export default {
     paymentHistory: 'Payment History',
     downloadPdf: 'Download PDF',
     pay: 'Pay',
+    filterByStatus: 'Filter by status',
     noInvoices: 'No invoices found',
     noInvoicesHint: 'Your invoices will appear here',
     notFound: 'Invoice not found',
@@ -177,6 +182,20 @@ export default {
     overdueBy: '{days} days overdue',
     accruedPenalty: 'Accrued penalty',
     viewSourceInvoice: 'View Original Invoice',
+    tab: {
+      detail: 'Details',
+      history: 'History',
+    },
+    history: {
+      tab: 'History',
+      statusTimeline: 'Status Timeline',
+      corrections: 'Linked Corrections',
+      activities: 'Activity Feed',
+      from: 'from',
+      noStatusLogs: 'No status changes recorded',
+      noCorrections: 'No corrections linked to this invoice',
+      noActivities: 'No activity recorded',
+    },
     type: {
       subscription: 'Subscription',
       'one-time': 'One-time',
@@ -210,6 +229,12 @@ export default {
     meters: 'Meters',
     noSubscriptions: 'No subscriptions found',
     notFound: 'Subscription not found',
+    customer: 'Customer Info',
+    customerName: 'Name',
+    customerEmail: 'Email',
+    customerPhone: 'Phone',
+    customerTaxId: 'Tax ID',
+    customerAddress: 'Billing Address',
     status: {
       active: 'Active',
       inactive: 'Inactive',
@@ -360,6 +385,30 @@ export default {
     tenant_required_for_route: 'Please use your personalised link to access this page.',
     landlord_required: 'This page is not available through the customer portal.',
     broadcast_no_tenant: 'Real-time updates are unavailable. Please refresh to see the latest data.',
+    unknown_workspace_page: {
+      title: 'Workspace not available',
+      description: 'We couldn\'t open this workspace. The address may be wrong, or your provider may have suspended access. Please double-check the link or contact your provider.',
+      cta: 'Back to main site',
+    },
+    no_workspace_landing: {
+      title: 'You\'re on the main site',
+      description: 'This portal is reached through your provider\'s personalised link. Please use the link your provider sent you.',
+      example: 'Example: yourprovider.colab-client.app',
+      cta: 'Visit our website',
+    },
+  },
+
+  // UI Primitives
+  ui: {
+    emptyState: {
+      defaultTitle: 'Nothing here yet',
+      defaultSubtitle: 'Data will appear here once available.',
+    },
+    confirmDialog: {
+      defaultTitle: 'Are you sure?',
+      defaultOk: 'Confirm',
+      defaultCancel: 'Cancel',
+    },
   },
 
   // Profile
@@ -371,5 +420,186 @@ export default {
     changePassword: 'Change Password',
     changePasswordNotImplemented: 'Password change coming soon',
     mySuppliers: 'My Suppliers',
+    tabs: {
+      settings: 'Settings',
+      contact: 'Contact Preferences',
+      devices: 'Devices',
+    },
+  },
+
+  // Profile Settings tab
+  profileSettings: {
+    saving: 'Saving...',
+    saved: 'Saved',
+    loadError: 'Failed to load settings',
+    saveError: 'Failed to save settings',
+    notifications: {
+      title: 'Notification Preferences',
+      hint: 'Choose how you want to receive notifications for each category',
+      category: 'Category',
+      email: 'Email',
+      sms: 'SMS',
+      push: 'Push',
+      categories: {
+        invoice: 'Invoices',
+        payment: 'Payments',
+        reading: 'Meter Readings',
+        subscription: 'Subscriptions',
+        maintenance: 'Maintenance',
+        alert: 'Alerts',
+        general: 'General',
+      },
+    },
+    localization: {
+      title: 'Language & Timezone',
+      language: 'Language',
+      timezone: 'Timezone',
+    },
+    channels: {
+      title: 'Communication Channels',
+      preferredChannel: 'Preferred Channel',
+      emailOverride: 'Email Override',
+      emailOverrideHint: 'Leave blank to use your account email',
+      phoneOverride: 'Phone Override',
+      phoneOverrideHint: 'Leave blank to use your account phone',
+      options: {
+        email: 'Email',
+        sms: 'SMS',
+        any: 'Any',
+      },
+    },
+  },
+
+  // Contact Settings section
+  contactSettings: {
+    title: 'Contact Preferences',
+    hint: 'Customize how you receive communications as a contact',
+    billingEmail: 'Billing Email Override',
+    billingEmailHint: 'Invoices will be sent to this email instead of your account email',
+    preferredChannel: 'Preferred Notification Channel',
+    receiveLabel: 'Receive notifications for:',
+    receiveInvoices: 'Invoices',
+    receiveAlerts: 'Alerts',
+    receiveReadings: 'Reading Reminders',
+    loadError: 'Failed to load contact preferences',
+    saveError: 'Failed to save contact preferences',
+  },
+
+  // Registered Devices section
+  registeredDevices: {
+    title: 'Registered Devices',
+    hint: 'Devices registered for push notifications',
+    noDevices: 'No devices registered',
+    platform: 'Platform',
+    lastUsed: 'Last used',
+    registered: 'Registered',
+    loadError: 'Failed to load devices',
+    revokeTitle: 'Revoke Device',
+    revokeMessage: 'Remove push notifications for "{name}"? You can re-register by logging in again.',
+    revokeConfirm: 'Revoke',
+  },
+
+  // Errors / not found
+  errors: {
+    notFound: 'Oops. Nothing here...',
+    goHome: 'Go Home',
+  },
+
+  // Forgot password (page-level strings)
+  forgotPassword: {
+    hint: 'Enter your email address and we will send you a password reset link.',
+    emailLabel: 'Email',
+    checkEmail: 'Check your email for password reset instructions.',
+    submit: 'Send Link',
+    backToLogin: 'Back to login',
+    emailRequired: 'Please enter your email address',
+    genericError: 'An error occurred',
+  },
+
+  // Notifications / alert center
+  notifications: {
+    loadMore: 'Load more',
+    markAllRead: 'Mark all as read',
+    close: 'Close',
+    markRead: 'Mark as read',
+    bellLabel: 'Notifications ({count} unread)',
+    preferences: 'Notification preferences',
+  },
+
+  // Alert preferences page
+  alertPreferences: {
+    title: 'Notification Preferences',
+    browserSection: 'Browser Notifications',
+    browserHint: 'Receive desktop notifications even when the app is not open',
+    enableBrowser: 'Enable Notifications',
+    browserBlocked: 'Notifications have been blocked. Enable them in your browser settings.',
+    enableAll: 'Enable All',
+    disableAll: 'Disable All',
+    save: 'Save Preferences',
+    viewDetails: 'View details',
+    addTitle: 'Add Notification Preference',
+    alertType: 'Alert Type',
+    channels: 'Notification Channels',
+    channelEmail: 'Email',
+    channelSms: 'SMS',
+    channelInApp: 'In-App',
+    quietHoursStart: 'Quiet From',
+    quietHoursEnd: 'Quiet Until',
+    deleteConfirmTitle: 'Remove Preference',
+    deleteConfirmMessage: 'Remove this notification preference?',
+    dismiss: 'Dismiss',
+  },
+
+  // Payments (cancel/success redirect pages)
+  payments: {
+    redirecting: 'Redirecting to payment...',
+    error: 'Payment error',
+    errorMessage: 'An error occurred while processing your payment. Please try again.',
+
+    success: {
+      title: 'Payment Successful!',
+      message: 'Your payment has been processed successfully.',
+      verifying: 'Verifying payment status...',
+      viewInvoice: 'View Invoice',
+      backToInvoices: 'Back to Invoices',
+    },
+
+    cancel: {
+      title: 'Payment Cancelled',
+      message: 'Your payment was cancelled. You can try again anytime.',
+      tryAgain: 'Try Again',
+      backToInvoices: 'Back to Invoices',
+    },
+
+    receipt: {
+      number: 'Receipt Number',
+      amount: 'Amount Paid',
+      status: 'Status',
+    },
+
+    status: {
+      pending: 'Pending',
+      completed: 'Completed',
+      failed: 'Failed',
+    },
+  },
+
+  // OTP Login (passwordless flow — OtpLoginPage)
+  otp: {
+    identifier: 'Email or Phone',
+    identifierHint: 'Enter your email or phone number',
+    titleIdentifier: 'Sign in without a password',
+    subtitleIdentifier: 'Enter your email or phone number to receive a one-time code',
+    titleVerify: 'Enter your code',
+    subtitleVerify: 'Enter the one-time code we sent you',
+    sentTo: 'Code sent to',
+    verify: 'Verify & Sign In',
+    resend: 'Resend Code',
+    codeSent: 'Code sent successfully',
+    invalidCode: 'Invalid code. Please try again.',
+    errorSendingCode: 'Failed to send code. Please try again.',
+    usePassword: 'Sign in with password',
+    accountNumber: 'Account number',
+    loginSuccess: 'Login successful',
   },
 };

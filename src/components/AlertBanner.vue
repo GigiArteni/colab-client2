@@ -50,14 +50,12 @@
             v-if="dismissible"
             flat
             round
-            dense
             icon="las la-times"
             :color="getPriorityColor(alert.priority)"
+            :aria-label="t('common.close')"
             :loading="dismissing.has(alert.id)"
             @click="handleDismiss(alert.id)"
-          >
-            <q-tooltip>Închide</q-tooltip>
-          </q-btn>
+          />
         </div>
       </template>
     </q-banner>
@@ -67,6 +65,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
 import type { Alert } from 'src/types/alert.types';
 
 interface Props {
@@ -81,7 +80,7 @@ interface Emits {
   (e: 'action', alert: Alert): void;
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   dismissible: true,
   actionable: true,
   actionLabel: 'Vezi detalii',
@@ -89,6 +88,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<Emits>();
 const router = useRouter();
+const { t } = useI18n();
 
 const dismissing = ref(new Set<string>());
 
@@ -130,7 +130,7 @@ function sanitizeHtml(html: string): string {
 /**
  * Handle dismiss
  */
-async function handleDismiss(alertId: string) {
+function handleDismiss(alertId: string) {
   dismissing.value.add(alertId);
 
   try {

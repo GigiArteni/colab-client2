@@ -22,6 +22,7 @@ export default {
     selectEntity: 'Selectează Compania',
     loadMore: 'Încarcă Mai Multe',
     by: 'de',
+    skipToContent: 'Sari la conținutul principal',
   },
 
   // Navigation
@@ -37,6 +38,7 @@ export default {
     subscriptionsShort: 'Contracte',
     profile: 'Profil',
     profileShort: 'Profil',
+    mainNavLabel: 'Navigare principală',
   },
 
   // Auth
@@ -52,6 +54,7 @@ export default {
     forgotPassword: 'Ai uitat parola?',
     continue: 'Continuă',
     changeIdentifier: 'Schimbă',
+    stepOf: 'Pasul {current} din {total}',
     // OTP Login (Passwordless)
     otp: {
       enterIdentifier: 'Conectează-te la contul tău',
@@ -151,6 +154,7 @@ export default {
     paymentHistory: 'Istoric Plăți',
     downloadPdf: 'Descarcă PDF',
     pay: 'Plătește',
+    filterByStatus: 'Filtrează după stare',
     noInvoices: 'Nu ai facturi',
     noInvoicesHint: 'Facturile tale vor apărea aici',
     notFound: 'Factură negăsită',
@@ -179,6 +183,20 @@ export default {
     overdueBy: '{days} zile restanță',
     accruedPenalty: 'Penalizare acumulată',
     viewSourceInvoice: 'Vezi Factura Originală',
+    tab: {
+      detail: 'Detalii',
+      history: 'Istoric',
+    },
+    history: {
+      tab: 'Istoric',
+      statusTimeline: 'Cronologie Stări',
+      corrections: 'Corecții Asociate',
+      activities: 'Flux Activitate',
+      from: 'din',
+      noStatusLogs: 'Nu există schimbări de stare înregistrate',
+      noCorrections: 'Nu există corecții asociate acestei facturi',
+      noActivities: 'Nu există activitate înregistrată',
+    },
     type: {
       subscription: 'Abonament',
       'one-time': 'O singură dată',
@@ -212,6 +230,12 @@ export default {
     meters: 'Contoare',
     noSubscriptions: 'Nu ai abonamente',
     notFound: 'Abonament negăsit',
+    customer: 'Date Client',
+    customerName: 'Nume',
+    customerEmail: 'Email',
+    customerPhone: 'Telefon',
+    customerTaxId: 'CUI / CNP',
+    customerAddress: 'Adresă Facturare',
     status: {
       active: 'Activ',
       inactive: 'Inactiv',
@@ -362,6 +386,30 @@ export default {
     tenant_required_for_route: 'Te rugăm să folosești link-ul personalizat pentru a accesa această pagină.',
     landlord_required: 'Această pagină nu este disponibilă prin portalul clienților.',
     broadcast_no_tenant: 'Actualizările în timp real sunt indisponibile. Reîncarcă pagina pentru datele recente.',
+    unknown_workspace_page: {
+      title: 'Workspace indisponibil',
+      description: 'Nu am putut deschide acest workspace. Verifică adresa sau contactează furnizorul tău — accesul poate fi suspendat.',
+      cta: 'Înapoi la site-ul principal',
+    },
+    no_workspace_landing: {
+      title: 'Te afli pe site-ul principal',
+      description: 'Acest portal se accesează prin link-ul personalizat al furnizorului tău. Folosește link-ul primit de la furnizor.',
+      example: 'Exemplu: furnizorultau.colab-client.app',
+      cta: 'Vizitează site-ul nostru',
+    },
+  },
+
+  // UI Primitives
+  ui: {
+    emptyState: {
+      defaultTitle: 'Nimic aici încă',
+      defaultSubtitle: 'Datele vor apărea aici odată ce sunt disponibile.',
+    },
+    confirmDialog: {
+      defaultTitle: 'Ești sigur?',
+      defaultOk: 'Confirmă',
+      defaultCancel: 'Anulează',
+    },
   },
 
   // Profile
@@ -373,5 +421,186 @@ export default {
     changePassword: 'Schimbă Parola',
     changePasswordNotImplemented: 'Schimbarea parolei va fi disponibilă în curând',
     mySuppliers: 'Furnizorii Mei',
+    tabs: {
+      settings: 'Setări',
+      contact: 'Preferințe Contact',
+      devices: 'Dispozitive',
+    },
+  },
+
+  // Profile Settings tab
+  profileSettings: {
+    saving: 'Se salvează...',
+    saved: 'Salvat',
+    loadError: 'Nu s-au putut încărca setările',
+    saveError: 'Nu s-au putut salva setările',
+    notifications: {
+      title: 'Preferințe Notificări',
+      hint: 'Alege cum dorești să primești notificări pentru fiecare categorie',
+      category: 'Categorie',
+      email: 'Email',
+      sms: 'SMS',
+      push: 'Push',
+      categories: {
+        invoice: 'Facturi',
+        payment: 'Plăți',
+        reading: 'Citiri Contor',
+        subscription: 'Abonamente',
+        maintenance: 'Mentenanță',
+        alert: 'Alerte',
+        general: 'General',
+      },
+    },
+    localization: {
+      title: 'Limbă și Fus Orar',
+      language: 'Limbă',
+      timezone: 'Fus Orar',
+    },
+    channels: {
+      title: 'Canale de Comunicare',
+      preferredChannel: 'Canal Preferat',
+      emailOverride: 'Email Alternativ',
+      emailOverrideHint: 'Lasă gol pentru a folosi emailul contului tău',
+      phoneOverride: 'Telefon Alternativ',
+      phoneOverrideHint: 'Lasă gol pentru a folosi telefonul contului tău',
+      options: {
+        email: 'Email',
+        sms: 'SMS',
+        any: 'Oricare',
+      },
+    },
+  },
+
+  // Contact Settings section
+  contactSettings: {
+    title: 'Preferințe Contact',
+    hint: 'Personalizează cum primești comunicările ca și contact',
+    billingEmail: 'Email Alternativ pentru Facturare',
+    billingEmailHint: 'Facturile vor fi trimise la acest email în loc de emailul contului tău',
+    preferredChannel: 'Canal Preferat de Notificare',
+    receiveLabel: 'Primește notificări pentru:',
+    receiveInvoices: 'Facturi',
+    receiveAlerts: 'Alerte',
+    receiveReadings: 'Remindere Citiri',
+    loadError: 'Nu s-au putut încărca preferințele de contact',
+    saveError: 'Nu s-au putut salva preferințele de contact',
+  },
+
+  // Registered Devices section
+  registeredDevices: {
+    title: 'Dispozitive Înregistrate',
+    hint: 'Dispozitive înregistrate pentru notificări push',
+    noDevices: 'Niciun dispozitiv înregistrat',
+    platform: 'Platformă',
+    lastUsed: 'Ultima utilizare',
+    registered: 'Înregistrat',
+    loadError: 'Nu s-au putut încărca dispozitivele',
+    revokeTitle: 'Revocă Dispozitivul',
+    revokeMessage: 'Elimini notificările push pentru "{name}"? Te poți re-înregistra la următoarea autentificare.',
+    revokeConfirm: 'Revocă',
+  },
+
+  // Errors / not found
+  errors: {
+    notFound: 'Ups. Nimic aici...',
+    goHome: 'Acasă',
+  },
+
+  // Forgot password (page-level strings)
+  forgotPassword: {
+    hint: 'Introdu adresa de email și îți vom trimite un link pentru resetarea parolei.',
+    emailLabel: 'Email',
+    checkEmail: 'Verifică-ți email-ul pentru instrucțiuni de resetare a parolei.',
+    submit: 'Trimite Link',
+    backToLogin: 'Înapoi la autentificare',
+    emailRequired: 'Introdu adresa de email',
+    genericError: 'A apărut o eroare',
+  },
+
+  // Notifications / alert center
+  notifications: {
+    loadMore: 'Încarcă mai multe',
+    markAllRead: 'Marchează tot ca citit',
+    close: 'Închide',
+    markRead: 'Marchează ca citită',
+    bellLabel: 'Notificări ({count} necitite)',
+    preferences: 'Preferințe notificări',
+  },
+
+  // Alert preferences page
+  alertPreferences: {
+    title: 'Preferințe Notificări',
+    browserSection: 'Notificări Browser',
+    browserHint: 'Primește notificări pe desktop chiar dacă aplicația nu este deschisă',
+    enableBrowser: 'Activează Notificările',
+    browserBlocked: 'Notificările au fost blocate. Activează-le din setările browser-ului.',
+    enableAll: 'Activează Tot',
+    disableAll: 'Dezactivează Tot',
+    save: 'Salvează Preferințele',
+    viewDetails: 'Vezi detalii',
+    addTitle: 'Adaugă Preferință Notificare',
+    alertType: 'Tip Alertă',
+    channels: 'Canale de Notificare',
+    channelEmail: 'Email',
+    channelSms: 'SMS',
+    channelInApp: 'În Aplicație',
+    quietHoursStart: 'Silențios de la',
+    quietHoursEnd: 'Silențios până la',
+    deleteConfirmTitle: 'Elimină Preferință',
+    deleteConfirmMessage: 'Elimini această preferință de notificare?',
+    dismiss: 'Închide',
+  },
+
+  // Payments (cancel/success redirect pages)
+  payments: {
+    redirecting: 'Redirecționare spre plată...',
+    error: 'Eroare la plată',
+    errorMessage: 'A apărut o eroare la procesarea plății. Te rugăm să încerci din nou.',
+
+    success: {
+      title: 'Plată efectuată cu succes!',
+      message: 'Plata ta a fost procesată cu succes.',
+      verifying: 'Se verifică statusul plății...',
+      viewInvoice: 'Vezi factura',
+      backToInvoices: 'Înapoi la facturi',
+    },
+
+    cancel: {
+      title: 'Plată anulată',
+      message: 'Plata a fost anulată. Poți încerca din nou oricând.',
+      tryAgain: 'Încearcă din nou',
+      backToInvoices: 'Înapoi la facturi',
+    },
+
+    receipt: {
+      number: 'Număr chitanță',
+      amount: 'Sumă plătită',
+      status: 'Status',
+    },
+
+    status: {
+      pending: 'În așteptare',
+      completed: 'Finalizată',
+      failed: 'Eșuată',
+    },
+  },
+
+  // OTP Login (passwordless flow — OtpLoginPage)
+  otp: {
+    identifier: 'Email sau Telefon',
+    identifierHint: 'Introdu adresa de email sau numărul de telefon',
+    titleIdentifier: 'Autentifică-te fără parolă',
+    subtitleIdentifier: 'Introdu email-ul sau telefonul pentru a primi un cod unic',
+    titleVerify: 'Introdu codul',
+    subtitleVerify: 'Introdu codul unic primit',
+    sentTo: 'Cod trimis la',
+    verify: 'Verifică și Autentifică-te',
+    resend: 'Retrimite Codul',
+    codeSent: 'Cod trimis cu succes',
+    invalidCode: 'Cod invalid. Te rugăm să încerci din nou.',
+    errorSendingCode: 'Trimiterea codului a eșuat. Te rugăm să încerci din nou.',
+    usePassword: 'Autentifică-te cu parolă',
+    accountNumber: 'Număr cont',
+    loginSuccess: 'Autentificare reușită',
   },
 };
