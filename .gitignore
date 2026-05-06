@@ -27,3 +27,11 @@ yarn-error.log*
 # local .env files
 .env.local*
 yarn.lock
+
+# Test artifacts
+/coverage
+/playwright-report
+/test-results
+/playwright/.cache
+.last-run.json
+*.lcov
