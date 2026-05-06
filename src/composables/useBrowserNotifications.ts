@@ -111,7 +111,6 @@ export function useBrowserNotifications() {
           alertableId: alert.alertable_id,
         },
         requireInteraction: options?.requireInteraction || alert.priority === 'urgent',
-        vibrate: options?.vibrate || (alert.priority === 'urgent' ? [200, 100, 200] : undefined),
       });
 
       // Handle notification click

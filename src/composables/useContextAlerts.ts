@@ -82,10 +82,9 @@ export function useContextAlerts(options: UseContextAlertsOptions) {
 
     try {
       // Fetch all alerts for this contact
-      const response = await alertService.getAlerts(entityId, contactId, {
-        dismissed: options.unreadOnly !== false ? false : undefined,
-        per_page: 50,
-      });
+      const alertParams: { per_page: number; dismissed?: boolean } = { per_page: 50 };
+      if (options.unreadOnly !== false) alertParams.dismissed = false;
+      const response = await alertService.getAlerts(entityId, contactId, alertParams);
 
       // Filter to only alerts about this specific resource
       const alertableType = getAlertableType(options.resourceType);

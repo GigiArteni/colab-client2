@@ -14,7 +14,7 @@ export function useEcho() {
   const instance = getCurrentInstance();
 
   // Get Echo instance from global properties
-  const echo = computed<Echo | null>(() => {
+  const echo = computed<Echo<'pusher'> | null>(() => {
     return instance?.appContext.config.globalProperties.$echo || window.Echo || null;
   });
 
@@ -31,7 +31,7 @@ export function useEcho() {
   const subscribe = (
     channelName: string,
     eventName: string,
-    callback: (data: any) => void
+    callback: (data: unknown) => void
   ) => {
     if (!echo.value) {
       console.warn('[useEcho] Cannot subscribe: Echo not connected');
@@ -65,7 +65,7 @@ export function useEcho() {
   const subscribePublic = (
     channelName: string,
     eventName: string,
-    callback: (data: any) => void
+    callback: (data: unknown) => void
   ) => {
     if (!echo.value) {
       console.warn('[useEcho] Cannot subscribe: Echo not connected');
