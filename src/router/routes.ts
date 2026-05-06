@@ -12,6 +12,18 @@ const routes: RouteRecordRaw[] = [
         redirect: '/auth/login',
       },
       {
+        path: 'unknown-workspace',
+        name: 'unknown-workspace',
+        component: () => import('pages/error/UnknownWorkspacePage.vue'),
+        meta: { allowsNoTenant: true },
+      },
+      {
+        path: 'no-workspace',
+        name: 'no-workspace',
+        component: () => import('pages/error/NoWorkspaceLandingPage.vue'),
+        meta: { allowsNoTenant: true },
+      },
+      {
         path: 'login',
         name: 'login',
         component: () => import('pages/auth/LoginPage.vue'),

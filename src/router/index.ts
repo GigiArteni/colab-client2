@@ -6,6 +6,7 @@ import {
   createWebHistory,
 } from 'vue-router';
 import { LocalStorage } from 'quasar';
+import { useTenant } from 'src/composables/useTenant';
 import routes from './routes';
 
 /*
@@ -34,20 +35,34 @@ export default defineRouter(function (/* { store, ssrContext } */) {
     history: createHistory(process.env.VUE_ROUTER_BASE),
   });
 
-  // Navigation guard for authentication
+  // Navigation guard. Tenant slug is parsed from `window.location.hostname`
+  // by `useTenant()`; this guard simply routes unresolved or invalid
+  // workspaces to the appropriate landing pages. Routes opt out of the
+  // tenant gate via `meta.allowsNoTenant`.
   Router.beforeEach((to, from, next) => {
     const isAuthenticated = !!LocalStorage.getItem('access_token');
+    const tenant = useTenant();
 
-    // Check if route requires auth
+    if (!to.meta.allowsNoTenant) {
+      if (tenant.slug.value === null) {
+        return next({ path: '/auth/no-workspace' });
+      }
+      if (
+        tenant.lookupResult.value !== null &&
+        (tenant.lookupResult.value.exists !== true ||
+          tenant.lookupResult.value.status !== 'active')
+      ) {
+        return next({ path: '/auth/unknown-workspace' });
+      }
+    }
+
     if (to.meta.requiresAuth && !isAuthenticated) {
-      // Redirect to login with return URL
       return next({
         path: '/auth/login',
         query: { redirect: to.fullPath },
       });
     }
 
-    // Check if route is for guests only
     if (to.meta.requiresGuest && isAuthenticated) {
       return next('/dashboard');
     }

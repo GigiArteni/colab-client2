@@ -6,6 +6,18 @@
 import { defineBoot } from '#q-app/wrappers';
 import axios, { type AxiosInstance, type AxiosError } from 'axios';
 import { LocalStorage } from 'quasar';
+import { useTenant } from 'src/composables/useTenant';
+
+interface TenancyErrorPayload {
+  message?: string;
+  message_key?: string;
+}
+
+const TENANT_MISMATCH_KEYS = new Set([
+  'tenant_unknown',
+  'tenant_inactive',
+  'tenant_archived',
+]);
 
 declare module 'vue' {
   interface ComponentCustomProperties {
@@ -43,6 +55,33 @@ api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
     const originalRequest = error.config;
+
+    // Workspace mismatch — invalidate cached lookup and bounce to the
+    // unknown-workspace landing. Triggered by BE returning 503
+    // (tenant_inactive/archived) or 404 (tenant_unknown) mid-session. The
+    // slug stays bound to the hostname; only the cached lookup is cleared.
+    // Skip the public workspace lookup itself to avoid a guard loop.
+    const status = error.response?.status;
+    const payload = error.response?.data as TenancyErrorPayload | undefined;
+    const messageKey = payload?.message_key;
+    const isWorkspaceLookup = originalRequest?.url?.includes('/workspaces/') ?? false;
+
+    if (
+      messageKey &&
+      TENANT_MISMATCH_KEYS.has(messageKey) &&
+      (status === 404 || status === 503) &&
+      !isWorkspaceLookup
+    ) {
+      const tenant = useTenant();
+      tenant.invalidate();
+      if (
+        typeof window !== 'undefined' &&
+        !window.location.pathname.includes('/auth/unknown-workspace')
+      ) {
+        window.location.href = `/auth/unknown-workspace?reason=${encodeURIComponent(messageKey)}`;
+      }
+      return Promise.reject(error);
+    }
 
     // Handle 401 Unauthorized
     if (error.response?.status === 401 && originalRequest) {
