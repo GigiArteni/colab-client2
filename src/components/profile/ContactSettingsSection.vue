@@ -81,9 +81,11 @@
 import { ref, reactive, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { contactSettingsService } from 'src/services/contactSettings.service';
+import { useProfileStore } from 'src/stores/profile';
 import ErrorBanner from 'src/components/ui/ErrorBanner.vue';
 
 const { t } = useI18n();
+const profileStore = useProfileStore();
 
 const loading = ref(false);
 const loadError = ref<string | null>(null);
@@ -91,6 +93,7 @@ const saving = ref(false);
 const saved = ref(false);
 const saveError = ref<string | null>(null);
 let autosaveTimer: ReturnType<typeof setTimeout> | null = null;
+let currentSettingId = '';
 
 const form = reactive({
   billing_email_override: '',
@@ -107,15 +110,19 @@ const channelOptions = [
 ];
 
 async function loadSettings(): Promise<void> {
+  const contactId = profileStore.contact?.id;
+  if (!contactId) return;
+
   loading.value = true;
   loadError.value = null;
   try {
-    const settings = await contactSettingsService.getSettings();
+    const settings = await contactSettingsService.getSettings(contactId);
+    currentSettingId = settings.contact_id ?? '';
     form.billing_email_override = settings.billing_email_override ?? '';
-    form.preferred_notification_channel = settings.preferred_notification_channel;
-    form.receive_invoices = settings.receive_invoices;
-    form.receive_alerts = settings.receive_alerts;
-    form.receive_readings_reminders = settings.receive_readings_reminders;
+    form.preferred_notification_channel = settings.preferred_notification_channel ?? 'email';
+    form.receive_invoices = settings.receive_invoices ?? true;
+    form.receive_alerts = settings.receive_alerts ?? true;
+    form.receive_readings_reminders = settings.receive_readings_reminders ?? true;
   } catch {
     loadError.value = t('contactSettings.loadError');
   } finally {
@@ -131,17 +138,20 @@ function scheduleAutosave(): void {
 }
 
 async function autosave(): Promise<void> {
+  const contactId = profileStore.contact?.id;
+  if (!contactId || !currentSettingId) return;
+
   saving.value = true;
   saveError.value = null;
   try {
-    const settingsPayload: Parameters<typeof contactSettingsService.updateSettings>[0] = {
+    const settingsPayload: Parameters<typeof contactSettingsService.updateSettings>[2] = {
       preferred_notification_channel: form.preferred_notification_channel,
       receive_invoices: form.receive_invoices,
       receive_alerts: form.receive_alerts,
       receive_readings_reminders: form.receive_readings_reminders,
     };
     if (form.billing_email_override) settingsPayload.billing_email_override = form.billing_email_override;
-    await contactSettingsService.updateSettings(settingsPayload);
+    await contactSettingsService.updateSettings(contactId, currentSettingId, settingsPayload);
     saved.value = true;
     setTimeout(() => { saved.value = false; }, 3000);
   } catch {

@@ -206,7 +206,8 @@ function handleFilterChange(value: boolean): void {
 
 async function refreshData(done: () => void): Promise<void> {
   try {
-    await Promise.all([notificationsStore.fetchNotifications(), notificationsStore.fetchSummary()]);
+    await notificationsStore.fetchNotifications();
+    notificationsStore.fetchSummary();
   } catch (err) {
     console.error('Failed to refresh:', err);
   }
@@ -214,7 +215,8 @@ async function refreshData(done: () => void): Promise<void> {
 }
 
 onMounted(async () => {
-  await Promise.all([notificationsStore.fetchNotifications(), notificationsStore.fetchSummary()]);
+  await notificationsStore.fetchNotifications();
+    notificationsStore.fetchSummary();
 });
 </script>
 

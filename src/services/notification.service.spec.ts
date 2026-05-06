@@ -21,6 +21,8 @@ vi.mock('src/stores/auth', () => ({
 
 import { notificationService } from './notification.service';
 
+const ENTITY = 'e1';
+
 describe('notificationService', () => {
   beforeEach(() => {
     get.mockReset();
@@ -28,12 +30,12 @@ describe('notificationService', () => {
     del.mockReset();
   });
 
-  it('getNotifications calls /notifications with default sort', async () => {
+  it('getNotifications calls entity-scoped colab path with default sort', async () => {
     get.mockResolvedValueOnce({ data: { data: [], meta: {} } });
 
-    await notificationService.getNotifications();
+    await notificationService.getNotifications(ENTITY);
 
-    expect(get.mock.calls[0]![0]).toBe('/notifications');
+    expect(get.mock.calls[0]![0]).toBe('/entities/e1/colab/notifications');
     const opts = get.mock.calls[0]![1];
     expect(opts.params.sort).toBe('-created_at');
   });
@@ -41,7 +43,7 @@ describe('notificationService', () => {
   it('getNotifications passes extra params through', async () => {
     get.mockResolvedValueOnce({ data: { data: [], meta: {} } });
 
-    await notificationService.getNotifications({ page: 2 } as any);
+    await notificationService.getNotifications(ENTITY, { page: 2 } as any);
 
     const opts = get.mock.calls[0]![1];
     expect(opts.params.page).toBe(2);
@@ -51,43 +53,33 @@ describe('notificationService', () => {
     const notif = { id: 'n1' };
     get.mockResolvedValueOnce({ data: { data: notif } });
 
-    const result = await notificationService.getNotification('n1');
+    const result = await notificationService.getNotification(ENTITY, 'n1');
 
-    expect(get.mock.calls[0]![0]).toBe('/notifications/n1');
+    expect(get.mock.calls[0]![0]).toBe('/entities/e1/colab/notifications/n1');
     expect(result).toEqual(notif);
   });
 
   it('markAsRead posts to read endpoint', async () => {
     post.mockResolvedValueOnce({});
 
-    await notificationService.markAsRead('n1');
+    await notificationService.markAsRead(ENTITY, 'n1');
 
-    expect(post.mock.calls[0]![0]).toBe('/notifications/n1/read');
+    expect(post.mock.calls[0]![0]).toBe('/entities/e1/colab/notifications/n1/read');
   });
 
-  it('markAllAsRead posts to read-all endpoint', async () => {
+  it('markAllAsRead posts to mark-all-read endpoint', async () => {
     post.mockResolvedValueOnce({});
 
-    await notificationService.markAllAsRead();
+    await notificationService.markAllAsRead(ENTITY);
 
-    expect(post.mock.calls[0]![0]).toBe('/notifications/read-all');
-  });
-
-  it('getSummary returns summary data', async () => {
-    const summary = { total: 10, unread: 3 };
-    get.mockResolvedValueOnce({ data: { data: summary } });
-
-    const result = await notificationService.getSummary();
-
-    expect(get.mock.calls[0]![0]).toBe('/notifications/summary');
-    expect(result).toEqual(summary);
+    expect(post.mock.calls[0]![0]).toBe('/entities/e1/colab/notifications/mark-all-read');
   });
 
   it('deleteNotification calls delete endpoint', async () => {
     del.mockResolvedValueOnce({});
 
-    await notificationService.deleteNotification('n1');
+    await notificationService.deleteNotification(ENTITY, 'n1');
 
-    expect(del.mock.calls[0]![0]).toBe('/notifications/n1');
+    expect(del.mock.calls[0]![0]).toBe('/entities/e1/colab/notifications/n1');
   });
 });

@@ -35,3 +35,4 @@ yarn.lock
 /playwright/.cache
 .last-run.json
 *.lcov
+/.omc

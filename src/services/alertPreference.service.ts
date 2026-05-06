@@ -11,11 +11,21 @@ import type {
 } from 'src/types/alertPreference.types';
 
 /**
- * Get all alert types
+ * Get all alert types (static list — no dedicated BE endpoint exists)
  */
-export async function getAlertTypes(entityId: string): Promise<AlertType[]> {
-  const response = await api.get(`/entities/${entityId}/alert-types`);
-  return response.data.data || [];
+export function getAlertTypes(): AlertType[] {
+  return [
+    { id: 'invoice', code: 'invoice', category: 'invoice', name: 'Invoice', priority: 'normal' },
+    { id: 'payment', code: 'payment', category: 'payment', name: 'Payment', priority: 'normal' },
+    { id: 'subscription', code: 'subscription', category: 'subscription', name: 'Subscription', priority: 'normal' },
+    { id: 'meter', code: 'meter', category: 'meter', name: 'Meter', priority: 'normal' },
+    { id: 'inspection', code: 'inspection', category: 'inspection', name: 'Inspection', priority: 'normal' },
+    { id: 'usage', code: 'usage', category: 'usage', name: 'Usage', priority: 'normal' },
+    { id: 'disconnection', code: 'disconnection', category: 'disconnection', name: 'Disconnection', priority: 'high' },
+    { id: 'compliance', code: 'compliance', category: 'compliance', name: 'Compliance', priority: 'high' },
+    { id: 'subsidy', code: 'subsidy', category: 'subsidy', name: 'Subsidy', priority: 'normal' },
+    { id: 'general', code: 'general', category: 'general', name: 'General', priority: 'low' },
+  ];
 }
 
 /**
@@ -83,16 +93,17 @@ export async function updatePreference(
 
 /**
  * Bulk update preferences (transactional)
+ * BE returns: { message, updated, created }
  */
 export async function bulkUpdatePreferences(
   entityId: string,
   data: BulkPreferenceUpdate
-): Promise<{ success: number; failed: number }> {
+): Promise<{ message: string; updated: number; created: number }> {
   const response = await api.post(
     `/entities/${entityId}/alert-preferences/bulk`,
     data
   );
-  return response.data;
+  return response.data as { message: string; updated: number; created: number };
 }
 
 /**

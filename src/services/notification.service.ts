@@ -6,27 +6,29 @@ import api from './api';
 import type {
   Notification,
   NotificationListParams,
-  NotificationSummary,
-  ApiResponse,
+  PaginatedResponse,
 } from 'src/types';
 
+const notificationBase = (entityId: string) =>
+  `/entities/${entityId}/colab/notifications`;
+
 const NOTIFICATION_ENDPOINTS = {
-  LIST: '/notifications',
-  DETAIL: (id: string) => `/notifications/${id}`,
-  MARK_READ: (id: string) => `/notifications/${id}/read`,
-  MARK_ALL_READ: '/notifications/read-all',
-  SUMMARY: '/notifications/summary',
+  LIST: (entityId: string) => notificationBase(entityId),
+  DETAIL: (entityId: string, id: string) => `${notificationBase(entityId)}/${id}`,
+  MARK_READ: (entityId: string, id: string) => `${notificationBase(entityId)}/${id}/read`,
+  MARK_ALL_READ: (entityId: string) => `${notificationBase(entityId)}/mark-all-read`,
 };
 
 export const notificationService = {
   /**
-   * Get all notifications for the current user
+   * Get all notifications for the current user within an entity
    */
   async getNotifications(
+    entityId: string,
     params?: NotificationListParams
-  ): Promise<ApiResponse<Notification[]>> {
-    const response = await api.get<ApiResponse<Notification[]>>(
-      NOTIFICATION_ENDPOINTS.LIST,
+  ): Promise<PaginatedResponse<Notification>> {
+    const response = await api.get<PaginatedResponse<Notification>>(
+      NOTIFICATION_ENDPOINTS.LIST(entityId),
       {
         params: {
           sort: '-created_at',
@@ -41,9 +43,9 @@ export const notificationService = {
   /**
    * Get a single notification by ID
    */
-  async getNotification(id: string): Promise<Notification> {
+  async getNotification(entityId: string, id: string): Promise<Notification> {
     const response = await api.get<{ data: Notification }>(
-      NOTIFICATION_ENDPOINTS.DETAIL(id)
+      NOTIFICATION_ENDPOINTS.DETAIL(entityId, id)
     );
     return response.data.data;
   },
@@ -51,31 +53,21 @@ export const notificationService = {
   /**
    * Mark a notification as read
    */
-  async markAsRead(id: string): Promise<void> {
-    await api.post(NOTIFICATION_ENDPOINTS.MARK_READ(id));
+  async markAsRead(entityId: string, id: string): Promise<void> {
+    await api.post(NOTIFICATION_ENDPOINTS.MARK_READ(entityId, id));
   },
 
   /**
    * Mark all notifications as read
    */
-  async markAllAsRead(): Promise<void> {
-    await api.post(NOTIFICATION_ENDPOINTS.MARK_ALL_READ);
-  },
-
-  /**
-   * Get notification summary (total, unread count)
-   */
-  async getSummary(): Promise<NotificationSummary> {
-    const response = await api.get<{ data: NotificationSummary }>(
-      NOTIFICATION_ENDPOINTS.SUMMARY
-    );
-    return response.data.data;
+  async markAllAsRead(entityId: string): Promise<void> {
+    await api.post(NOTIFICATION_ENDPOINTS.MARK_ALL_READ(entityId));
   },
 
   /**
    * Delete a notification
    */
-  async deleteNotification(id: string): Promise<void> {
-    await api.delete(NOTIFICATION_ENDPOINTS.DETAIL(id));
+  async deleteNotification(entityId: string, id: string): Promise<void> {
+    await api.delete(NOTIFICATION_ENDPOINTS.DETAIL(entityId, id));
   },
 };

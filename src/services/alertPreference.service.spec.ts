@@ -28,10 +28,13 @@ describe('alertPreferenceService', () => {
     del.mockReset();
   });
 
-  it('getAlertTypes calls correct endpoint', async () => {
-    get.mockResolvedValueOnce({ data: { data: [] } });
-    await alertPreferenceService.getAlertTypes(E);
-    expect(get.mock.calls[0]![0]).toBe(`/entities/${E}/alert-types`);
+  it('getAlertTypes returns static list without making an API call', () => {
+    const types = alertPreferenceService.getAlertTypes();
+    expect(get).not.toHaveBeenCalled();
+    expect(Array.isArray(types)).toBe(true);
+    expect(types.length).toBeGreaterThan(0);
+    expect(types[0]).toHaveProperty('code');
+    expect(types[0]).toHaveProperty('category');
   });
 
   it('getContactPreferences calls contact endpoint', async () => {
@@ -72,13 +75,13 @@ describe('alertPreferenceService', () => {
     expect(put.mock.calls[0]![0]).toBe(`/entities/${E}/alert-preferences/${P}`);
   });
 
-  it('bulkUpdatePreferences posts to bulk endpoint', async () => {
-    post.mockResolvedValueOnce({ data: { success: 2, failed: 0 } });
+  it('bulkUpdatePreferences posts to bulk endpoint and returns updated/created counts', async () => {
+    post.mockResolvedValueOnce({ data: { message: 'Preferences updated successfully', updated: 2, created: 1 } });
 
     const result = await alertPreferenceService.bulkUpdatePreferences(E, { preferences: [] });
 
     expect(post.mock.calls[0]![0]).toBe(`/entities/${E}/alert-preferences/bulk`);
-    expect(result).toEqual({ success: 2, failed: 0 });
+    expect(result).toEqual({ message: 'Preferences updated successfully', updated: 2, created: 1 });
   });
 
   it('optOut posts to opt-out endpoint with reason', async () => {

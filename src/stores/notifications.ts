@@ -5,6 +5,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { notificationService } from 'src/services/notification.service';
+import { useEntityStore } from 'src/stores/entity';
 import type {
   Notification,
   NotificationSummary,
@@ -40,6 +41,10 @@ export const useNotificationsStore = defineStore('notifications', () => {
 
   // Actions
   async function fetchNotifications(): Promise<void> {
+    const entityStore = useEntityStore();
+    const entityId = entityStore.selectedEntityId;
+    if (!entityId) return;
+
     isLoading.value = true;
     error.value = null;
 
@@ -49,13 +54,12 @@ export const useNotificationsStore = defineStore('notifications', () => {
         params['filter[read]'] = false;
       }
 
-      const response = await notificationService.getNotifications(params);
+      const response = await notificationService.getNotifications(entityId, params);
 
       notifications.value = response.data || [];
 
-      const paginated = response as unknown as { meta?: { pagination?: PaginationMeta } };
-      if (paginated.meta?.pagination) {
-        pagination.value = paginated.meta.pagination;
+      if (response.meta) {
+        pagination.value = response.meta;
       }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Eroare la încărcarea notificărilor';
@@ -68,6 +72,10 @@ export const useNotificationsStore = defineStore('notifications', () => {
   async function loadMore(): Promise<void> {
     if (!hasMore.value || isLoadingMore.value) return;
 
+    const entityStore = useEntityStore();
+    const entityId = entityStore.selectedEntityId;
+    if (!entityId) return;
+
     isLoadingMore.value = true;
 
     try {
@@ -78,15 +86,14 @@ export const useNotificationsStore = defineStore('notifications', () => {
         params['filter[read]'] = false;
       }
 
-      const response = await notificationService.getNotifications(params);
+      const response = await notificationService.getNotifications(entityId, params);
 
       if (response.data) {
         notifications.value = [...notifications.value, ...response.data];
       }
 
-      const paginated2 = response as unknown as { meta?: { pagination?: PaginationMeta } };
-      if (paginated2.meta?.pagination) {
-        pagination.value = paginated2.meta.pagination;
+      if (response.meta) {
+        pagination.value = response.meta;
       }
     } catch (err) {
       console.error('Failed to load more notifications:', err);
@@ -95,22 +102,22 @@ export const useNotificationsStore = defineStore('notifications', () => {
     }
   }
 
-  async function fetchSummary(): Promise<void> {
-    try {
-      summary.value = await notificationService.getSummary();
-    } catch (err) {
-      console.error('Failed to fetch notification summary:', err);
-      // Default summary
-      summary.value = {
-        total: notifications.value.length,
-        unread: notifications.value.filter((n) => !n.read_at).length,
-      };
-    }
+  function fetchSummary(): void {
+    // Summary is derived locally from the notifications list.
+    // BE does not expose a dedicated summary endpoint.
+    summary.value = {
+      total: notifications.value.length,
+      unread: notifications.value.filter((n) => !n.read_at).length,
+    };
   }
 
   async function markAsRead(id: string): Promise<void> {
+    const entityStore = useEntityStore();
+    const entityId = entityStore.selectedEntityId;
+    if (!entityId) return;
+
     try {
-      await notificationService.markAsRead(id);
+      await notificationService.markAsRead(entityId, id);
 
       // Update local state
       const notification = notifications.value.find((n) => n.id === id);
@@ -129,8 +136,12 @@ export const useNotificationsStore = defineStore('notifications', () => {
   }
 
   async function markAllAsRead(): Promise<void> {
+    const entityStore = useEntityStore();
+    const entityId = entityStore.selectedEntityId;
+    if (!entityId) throw new Error('No entity selected');
+
     try {
-      await notificationService.markAllAsRead();
+      await notificationService.markAllAsRead(entityId);
 
       // Update local state
       notifications.value.forEach((n) => {
@@ -150,8 +161,12 @@ export const useNotificationsStore = defineStore('notifications', () => {
   }
 
   async function deleteNotification(id: string): Promise<void> {
+    const entityStore = useEntityStore();
+    const entityId = entityStore.selectedEntityId;
+    if (!entityId) throw new Error('No entity selected');
+
     try {
-      await notificationService.deleteNotification(id);
+      await notificationService.deleteNotification(entityId, id);
 
       // Remove from local state
       const index = notifications.value.findIndex((n) => n.id === id);

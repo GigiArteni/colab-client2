@@ -6,6 +6,10 @@ vi.mock('src/boot/axios', () => ({
   api: { get: vi.fn(), post: vi.fn(), put: vi.fn(), delete: vi.fn() },
 }));
 
+vi.mock('src/stores/entity', () => ({
+  useEntityStore: () => ({ selectedEntityId: 'e1' }),
+}));
+
 import { useNotificationsStore } from './notifications';
 import { notificationService } from 'src/services/notification.service';
 
@@ -21,7 +25,7 @@ const makeNotif = (overrides = {}) => ({
 
 const makeApiResponse = (data: unknown[], page = 1, lastPage = 1) => ({
   data,
-  meta: { pagination: { current_page: page, last_page: lastPage, total: data.length, per_page: 20 } },
+  meta: { current_page: page, last_page: lastPage, total: data.length, per_page: 20, from: 1, to: data.length },
 });
 
 describe('useNotificationsStore', () => {
@@ -103,28 +107,18 @@ describe('useNotificationsStore', () => {
     expect(store.filteredNotifications[0]?.id).toBe('n1');
   });
 
-  it('fetchSummary populates summary', async () => {
-    mockedService.getSummary.mockResolvedValueOnce({ total: 10, unread: 4 } as any);
-
-    const store = useNotificationsStore();
-    await store.fetchSummary();
-
-    expect(store.unreadCount).toBe(4);
-    expect(store.hasUnread).toBe(true);
-  });
-
-  it('fetchSummary falls back to local count on error', async () => {
-    mockedService.getSummary.mockRejectedValueOnce(new Error('fail'));
-
+  it('fetchSummary computes summary from local notifications', () => {
     const store = useNotificationsStore();
     store.notifications = [
       makeNotif({ id: 'n1', read_at: null }),
       makeNotif({ id: 'n2', read_at: '2026-05-01' }),
+      makeNotif({ id: 'n3', read_at: null }),
     ] as any;
-    await store.fetchSummary();
+    store.fetchSummary();
 
-    expect(store.summary?.unread).toBe(1);
-    expect(store.summary?.total).toBe(2);
+    expect(store.summary?.total).toBe(3);
+    expect(store.summary?.unread).toBe(2);
+    expect(store.hasUnread).toBe(true);
   });
 
   it('markAllAsRead throws if service fails', async () => {

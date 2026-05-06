@@ -45,7 +45,7 @@ export const profileService = {
    * Change password
    */
   async changePassword(data: ChangePasswordPayload): Promise<void> {
-    await api.post(PROFILE_ENDPOINTS.PASSWORD, data);
+    await api.patch(PROFILE_ENDPOINTS.PASSWORD, data);
   },
 
   /**

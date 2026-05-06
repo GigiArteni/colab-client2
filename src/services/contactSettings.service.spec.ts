@@ -6,15 +6,18 @@ import { api } from 'src/boot/axios';
 vi.mock('src/boot/axios', () => ({
   api: {
     get: vi.fn(),
-    post: vi.fn(),
+    patch: vi.fn(),
   },
 }));
 
 const mockedGet = vi.mocked(api.get);
-const mockedPost = vi.mocked(api.post);
+const mockedPatch = vi.mocked(api.patch);
+
+const CONTACT_ID = 'c1';
+const SETTING_ID = 's1';
 
 const mockSettings = {
-  contact_id: 'c1',
+  contact_id: CONTACT_ID,
   billing_email_override: 'billing@example.com',
   preferred_notification_channel: 'email' as const,
   receive_invoices: true,
@@ -28,24 +31,35 @@ beforeEach(() => {
 
 describe('contactSettingsService', () => {
   describe('getSettings', () => {
-    it('GETs /contacts/settings and returns data', async () => {
-      mockedGet.mockResolvedValue({ data: { data: mockSettings } });
+    it('GETs /contacts/{contactId}/settings and returns first item', async () => {
+      mockedGet.mockResolvedValue({ data: { data: [mockSettings] } });
 
-      const result = await contactSettingsService.getSettings();
+      const result = await contactSettingsService.getSettings(CONTACT_ID);
 
-      expect(mockedGet).toHaveBeenCalledWith('/contacts/settings');
+      expect(mockedGet).toHaveBeenCalledWith(`/contacts/${CONTACT_ID}/settings`);
       expect(result).toEqual(mockSettings);
+    });
+
+    it('returns empty object when collection is empty', async () => {
+      mockedGet.mockResolvedValue({ data: { data: [] } });
+
+      const result = await contactSettingsService.getSettings(CONTACT_ID);
+
+      expect(result).toEqual({});
     });
   });
 
   describe('updateSettings', () => {
-    it('POSTs payload to /contacts/settings and returns updated data', async () => {
+    it('PATCHes payload to /contacts/{contactId}/settings/{settingId}', async () => {
       const payload = { receive_invoices: false };
-      mockedPost.mockResolvedValue({ data: { data: { ...mockSettings, ...payload } } });
+      mockedPatch.mockResolvedValue({ data: { data: { ...mockSettings, ...payload } } });
 
-      const result = await contactSettingsService.updateSettings(payload);
+      const result = await contactSettingsService.updateSettings(CONTACT_ID, SETTING_ID, payload);
 
-      expect(mockedPost).toHaveBeenCalledWith('/contacts/settings', payload);
+      expect(mockedPatch).toHaveBeenCalledWith(
+        `/contacts/${CONTACT_ID}/settings/${SETTING_ID}`,
+        payload
+      );
       expect(result.receive_invoices).toBe(false);
     });
   });

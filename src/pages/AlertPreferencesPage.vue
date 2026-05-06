@@ -209,7 +209,7 @@ async function loadData() {
     const contactId = profileStore.contact?.id;
     if (!entityId || !contactId) throw new Error('Missing entity or contact ID');
 
-    alertTypes.value = await alertPreferenceService.getAlertTypes(entityId);
+    alertTypes.value = alertPreferenceService.getAlertTypes();
     const prefs = await alertPreferenceService.getContactPreferences(entityId, contactId);
 
     preferences.value = new Map();

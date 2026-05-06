@@ -98,13 +98,12 @@ describe('profileService.updateProfile', () => {
 });
 
 describe('profileService.changePassword', () => {
-  it('POSTs /profile/password', async () => {
-    const mockedPost = vi.mocked(api.post);
-    mockedPost.mockResolvedValue({});
+  it('PATCHes /profile/password', async () => {
+    mockedPatch.mockResolvedValue({});
 
     await profileService.changePassword({ current_password: 'old', password: 'new', password_confirmation: 'new' } as any);
 
-    expect(mockedPost).toHaveBeenCalledWith('/profile/password', expect.objectContaining({ current_password: 'old' }));
+    expect(mockedPatch).toHaveBeenCalledWith('/profile/password', expect.objectContaining({ current_password: 'old' }));
   });
 });
 
